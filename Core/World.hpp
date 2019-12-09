@@ -26,12 +26,13 @@ public:
 		ID3D11ShaderResourceView* albedo = nullptr;
 		ID3D11ShaderResourceView* normal = nullptr;
 		int numIndices = 0;
+		std::string name;
+		glm::mat4 worldMatrix = glm::mat4(1.0f);
 	};
 
 	World() {}
 
-	void loadObjects(const std::string& fileName, const std::string& materialBaseDir);
-	void initializeBuffers(Renderer& renderer);
+	std::vector<Mesh>::iterator loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer);
 	void deinitializeBuffers();
 
 	World(const World& rhs) = delete;
@@ -43,19 +44,24 @@ public:
 	Camera& getCamera() { return m_camera; }
 
 	const std::vector<Mesh>& getObjects() const { return m_objects; }
+	std::vector<Mesh>& getObjects() { return m_objects; }
 
 	void addLight(Light l) { m_lights.push_back(l); }
 	std::vector<Light>& getLights() { return m_lights; }
 	const std::vector<Light>& getLights() const { return m_lights; }
+	glm::vec3 getAmbientLight() const { return m_ambientLight; }
+	void setAmbientLight(const glm::vec3& l) { m_ambientLight = l; }
 
 private:
+	void initializeBuffers(Renderer& renderer);
+
 	Camera m_camera;
 	tinyobj::attrib_t m_attrib;
 	std::vector<tinyobj::shape_t> m_shapes;
 	std::vector<tinyobj::material_t> m_materials;
 	std::vector<Mesh> m_objects;
 	std::vector<Light> m_lights;
-
+	glm::vec3 m_ambientLight = {1.0f, 1.0f, 1.0f};
 	std::map<std::string, ID3D11ShaderResourceView*> m_textures;
 	std::string m_materialBaseDir;
 };

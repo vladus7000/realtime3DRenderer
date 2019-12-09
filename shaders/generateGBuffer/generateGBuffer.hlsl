@@ -33,7 +33,7 @@ psInput vsmain(vsInput input)
 	psInput output;
 	float4 p = float4(input.position, 1.0f);
 	output.position = mul(mvp,p);
-	output.normal = mul(mv, float4(input.position, 0.0f));
+	output.normal = mul(mv, float4(input.normal, 0.0f));
 	output.tcoord = input.tcoords;
 	return output;
 }
@@ -49,7 +49,11 @@ ps_output psmain(psInput input)
 {
 	ps_output output;
 
-	output.diffuse =  diffuseMap.Sample(samplerState, input.tcoord);
+	output.diffuse = pow(diffuseMap.Sample(samplerState, input.tcoord), 2.2f);
+	if (output.diffuse.a < 1.0)
+	{
+		discard;
+	}
 	output.position = float4(input.position.xyz, 1.0f);
 	output.normal = float4(input.normal, 1.0f);
 	return output;

@@ -103,12 +103,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	Renderer mainRenderer(mainWindow, mainWorld);
 	mainRenderer.initialize();
 
-	mainWorld.loadObjects("rungholt/house.obj", "rungholt/");
-	mainWorld.initializeBuffers(mainRenderer);
+	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
+
+	//while (it != mainWorld.getObjects().end())
+	//{
+	//	it->worldMatrix = glm::scale(glm::vec3{ 0.4f, 3.0f, 1.0f });
+	//	++it;
+	//}
+
+	mainWorld.setAmbientLight({ 0.13f, 0.1f, 0.05f });
 
 	Light l;
 	l.m_direction = { 50.0f, 25.0f, 0.0f };
-	l.m_intensity = { 1.0f, 1.0f, 1.0f };
+	l.m_intensity = { 10.0f * 252.0f / 255.0f, 10.0f * 212.0f / 255.0f, 10.0f * 64.0f / 255.0f };
 	l.m_type = Light::Type::Directional;
 
 	mainWorld.addLight(l);
@@ -118,8 +125,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	//mainWorld.addLight(l);
 
 	l.m_direction = { -50.0f, 25.0f, 0.0f };
-	l.m_intensity = { 0.1f, 1.0f, 0.1f };
-	mainWorld.addLight(l);
+	l.m_intensity = { 0.1f, 400.0f, 0.1f };
+	//mainWorld.addLight(l);
 
 	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.1f, 1000.f);
 	g_mainCamera.setView({ 120, 60, 4 }, { 0, 0, 0 });

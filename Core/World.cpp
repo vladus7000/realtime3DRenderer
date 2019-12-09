@@ -6,12 +6,21 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-void World::loadObjects(const std::string& fileName, const std::string& materialBaseDir)
+std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer)
 {
 	std::string warn;
 	std::string errs;
 	m_materialBaseDir = materialBaseDir;
+	m_shapes.clear();
+	m_materials.clear();
 	tinyobj::LoadObj(&m_attrib, &m_shapes, &m_materials, &warn, &errs, fileName.c_str(), materialBaseDir.c_str(), true);
+
+	int oldSize = m_objects.size();
+
+	initializeBuffers(renderer);
+	m_materialBaseDir = "";
+
+	return m_objects.begin() + oldSize;
 }
 
 void World::initializeBuffers(Renderer& renderer)
@@ -21,19 +30,19 @@ void World::initializeBuffers(Renderer& renderer)
 	for (auto& shape : m_shapes)
 	{
 		auto& mesh = shape.mesh;
-		std::vector<unsigned int> indices;
+		//std::vector<unsigned int> indices;
 		std::vector<float> vertices;
 		std::vector<float> normals;
 		std::vector<float> tcoords;
 
-		indices.reserve(mesh.indices.size());
+		//indices.reserve(mesh.indices.size());
 
 		for (size_t f = 0; f < mesh.indices.size() / 3; f++)
 		{
 				tinyobj::index_t idx0 = mesh.indices[3 * f + 0];
 				tinyobj::index_t idx1 = mesh.indices[3 * f + 1];
 				tinyobj::index_t idx2 = mesh.indices[3 * f + 2];
-				indices.push_back(idx0.vertex_index);
+				//indices.push_back(idx0.vertex_index);
 				//indices.push_back(idx1.vertex_index);
 				//indices.push_back(idx2.vertex_index);
 			//indices.push_back(ind.vertex_index);
@@ -120,8 +129,10 @@ void World::initializeBuffers(Renderer& renderer)
 		}
 
 		auto& ob = m_objects.back();
+		ob.name = shape.name;
 		ob.albedo = diffuse;
-		D3D11_BUFFER_DESC buffDesc;
+		ob.numIndices = mesh.indices.size();//indices.size();
+		/*D3D11_BUFFER_DESC buffDesc;
 		buffDesc.ByteWidth = sizeof(unsigned int) * indices.size();
 		buffDesc.Usage = D3D11_USAGE_DEFAULT;
 		buffDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -131,8 +142,7 @@ void World::initializeBuffers(Renderer& renderer)
 		D3D11_SUBRESOURCE_DATA subdata;
 		subdata.pSysMem = indices.data();
 		device->CreateBuffer(&buffDesc, &subdata, &ob.indexBuffer);
-		ob.numIndices = mesh.indices.size();//indices.size();
-
+		*/
 		/////
 		{
 			D3D11_BUFFER_DESC buffDesc;
@@ -180,10 +190,10 @@ void World::deinitializeBuffers()
 {
 	for (auto& mesh : m_objects)
 	{
-		mesh.indexBuffer->Release();
-		mesh.norm_vb->Release();
-		mesh.tcoords_vb->Release();
-		mesh.vert_vb->Release();
+		if (mesh.indexBuffer) mesh.indexBuffer->Release();
+		if (mesh.norm_vb) mesh.norm_vb->Release();
+		if (mesh.tcoords_vb) mesh.tcoords_vb->Release();
+		if (mesh.vert_vb) mesh.vert_vb->Release();
 	}
 
 	for (auto& val : m_textures)

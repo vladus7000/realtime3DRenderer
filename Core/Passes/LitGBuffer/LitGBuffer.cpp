@@ -23,7 +23,7 @@ void LitGBuffer::setup(Renderer& renderer)
 	{
 		auto device = renderer.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.ByteWidth = sizeof(float[4]) * 2; // must be multiply of 16
+		buffDesc.ByteWidth = sizeof(float[4]) * 3; // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
 		buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -127,17 +127,21 @@ void LitGBuffer::draw(Renderer& renderer)
 
 	context->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
 
+	glm::vec3 ambient = renderer.getWorld().getAmbientLight();
+
 	for (auto& l : renderer.getWorld().getLights())
 	{
 		D3D11_MAPPED_SUBRESOURCE res;
 		context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 		struct Data
 		{
+			float ambient[4];
 			float pos[4];
 			float intensity[4];
 		};
 		Data* buffer = reinterpret_cast<Data*>(res.pData);
 
+		memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
 		memcpy(buffer->pos, &l.m_direction[0], sizeof(float[3]));
 		memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
 		context->Unmap(m_constantBuffer, 0);

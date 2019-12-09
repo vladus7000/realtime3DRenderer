@@ -37,23 +37,6 @@ void GenerateGBuffer::setup(Renderer& renderer)
 		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 		device->CreateSamplerState(&sampler, &m_sampler);
 	}
-
-	D3D11_MAPPED_SUBRESOURCE res;
-	context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-	struct Data
-	{
-		float mvp[16];
-		float mv[16];
-	};
-	Data* buffer = reinterpret_cast<Data*>(res.pData);
-
-	auto& camera = renderer.getWorld().getCamera();
-
-	glm::mat4 vp = camera.getProjection() * camera.getView();
-	glm::mat4 model = glm::rotate(glm::radians(0.0f), glm::vec3{ 0.f, 1.f, 0.f }) * glm::scale(glm::vec3{ 1.0f, 1.0f, 1.0f });
-	memcpy(buffer->mvp, &vp[0][0], sizeof(float[16]));
-	memcpy(buffer->mv, &model[0][0], sizeof(float[16]));
-	context->Unmap(m_constantBuffer, 0);
 }
 
 void GenerateGBuffer::release(Renderer& renderer)
@@ -102,6 +85,23 @@ void GenerateGBuffer::draw(Renderer& renderer)
 
 	for (auto& mesh : world.getObjects())
 	{
+		D3D11_MAPPED_SUBRESOURCE res;
+		context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+		struct Data
+		{
+			float mvp[16];
+			float model[16];
+		};
+		Data* buffer = reinterpret_cast<Data*>(res.pData);
+
+		auto& camera = renderer.getWorld().getCamera();
+
+		glm::mat4 mvp = camera.getProjection() * camera.getView() * mesh.worldMatrix;
+		//glm::mat4 model = glm::rotate(glm::radians(0.0f), glm::vec3{ 0.f, 1.f, 0.f }) * glm::scale(glm::vec3{ 1.0f, 1.0f, 1.0f });
+		memcpy(buffer->mvp, &mvp[0][0], sizeof(float[16]));
+		memcpy(buffer->model, &(mesh.worldMatrix[0][0]), sizeof(float[16]));
+		context->Unmap(m_constantBuffer, 0);
+
 		ID3D11ShaderResourceView* srvs[] = { mesh.albedo};
 		context->PSSetShaderResources(0, 1, srvs);
 

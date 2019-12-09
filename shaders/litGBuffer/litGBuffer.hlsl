@@ -1,5 +1,6 @@
 cbuffer globals
 {
+	float3 ambientLight;
 	float3 lightPosition;
 	float3 lightIntensity;
 }
@@ -24,7 +25,6 @@ struct psInput
 psInput vsmain(vsInput input)
 {
 	psInput output;
-	//float4 p = float4(input.position, 0.0f, 1.0f);
 	
 	float2 texcoord = float2(input.index & 1, input.index >> 1);
 	output.position = float4((texcoord.x - 0.5f) * 2, -(texcoord.y - 0.5f) * 2, 1, 1);
@@ -32,14 +32,48 @@ psInput vsmain(vsInput input)
 	return output;
 }
 
+float3 litPixel(float2 tCoord)
+{
+	float3 diffuse = diffuseMap.Sample(samplerState, tCoord).xyz;
+	float3 normal = normalMap.Sample(samplerState, tCoord).xyz;
+	//return normalize(normal);
+
+	float intencity = saturate(dot(normalize(normal), normalize(lightPosition)));
+
+	float3 color = intencity * diffuse * lightIntensity;
+	float3 diffuseAmbient = diffuse * ambientLight;
+
+	if (intencity > 0.5f)
+	{
+		return color;
+	}
+	else if(intencity > 0.01f)
+	{
+		return lerp(color, diffuseAmbient, intencity/4.0f);
+	}
+	else
+	{
+		return diffuseAmbient;
+	}
+}
+
+float3 toneMap(float3 hdrColor)
+{
+	//https://www.shadertoy.com/view/lslGzl
+	float exposure = 1.1f;
+	hdrColor *= exposure / (1.0f + hdrColor / exposure);
+	return hdrColor;
+}
+
 float4 psmain(psInput input) : SV_Target
 {
 	float2 tcoord = input.tcoord*0.5f + 0.5f;
 	tcoord.y = 1.0f - tcoord.y;
 	
-	float3 diffuse = diffuseMap.Sample(samplerState, tcoord).xyz;
-	float3 normal = normalMap.Sample(samplerState, tcoord).xyz;
-	//float3 lightPos(50.0f, 25.0f, 0.0f);
-	float intencity = saturate(dot(normalize(normal), normalize(lightPosition) ) );
-	return float4(intencity * diffuse * lightIntensity/*normalize(input.normal)*/ + float3(0.2f, 0.2f, 0.2f), 0.5f);
+	float3 hdrColor = litPixel(tcoord);
+
+	float3 ldrColor = toneMap(hdrColor);
+
+	float3 gammaCorrectedColor = pow(ldrColor, 1.0f / 2.2f);
+	return float4(gammaCorrectedColor, 0.0f);
 }

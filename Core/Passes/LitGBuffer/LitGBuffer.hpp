@@ -22,4 +22,5 @@ private:
 	ID3D11DepthStencilState* m_depthState;
 	ID3D11BlendState* m_blendState = nullptr;
 	Shader m_mainShader;
+	Shader m_toneShader;
 };

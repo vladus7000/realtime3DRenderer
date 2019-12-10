@@ -19,6 +19,7 @@ struct psInput
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
 	float2 tcoord : TEXCOORD;
+	float3 worldPosition : POSITION;
 };
 static matrix Identity =
 {
@@ -34,6 +35,7 @@ psInput vsmain(vsInput input)
 	float4 p = float4(input.position, 1.0f);
 	output.position = mul(mvp,p);
 	output.normal = mul(mv, float4(input.normal, 0.0f));
+	output.worldPosition = mul(mv, p);
 	output.tcoord = input.tcoords;
 	return output;
 }
@@ -54,7 +56,7 @@ ps_output psmain(psInput input)
 	{
 		discard;
 	}
-	output.position = float4(input.position.xyz, 1.0f);
+	output.position = float4(input.worldPosition.xyz, 1.0f);
 	output.normal = float4(input.normal, 1.0f);
 	return output;
 }

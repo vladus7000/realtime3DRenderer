@@ -23,7 +23,7 @@ void LitGBuffer::setup(Renderer& renderer)
 	{
 		auto device = renderer.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.ByteWidth = sizeof(float[4]) * 3; // must be multiply of 16
+		buffDesc.ByteWidth = sizeof(float[4]) * 4; // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
 		buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -31,6 +31,7 @@ void LitGBuffer::setup(Renderer& renderer)
 		device->CreateBuffer(&buffDesc, nullptr, &m_constantBuffer);
 
 		m_mainShader = renderer.createShader("shaders/litGBuffer/litGBuffer.hlsl", "vsmain", "psmain");
+		m_toneShader = renderer.createShader("shaders/litGBuffer/tonemapGBuffer.hlsl", "vsmain", "psmain");
 		D3D11_SAMPLER_DESC sampler;
 		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
 		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -109,12 +110,18 @@ void LitGBuffer::draw(Renderer& renderer)
 
 	auto& gbuffer = renderer.getGBuffer();
 
-	ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
-	
-	context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-	ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV};
-	context->PSSetShaderResources(0, 3, srvs);
+	{
 
+		auto context = renderer.getContext();
+		float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		context->ClearRenderTargetView(renderer.getHDRTexture().m_RT, color);
+
+		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT };
+
+		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
+		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV };
+		context->PSSetShaderResources(0, 3, srvs);
+	}
 	context->PSSetSamplers(0, 1, &m_sampler);
 
 	context->OMSetDepthStencilState(m_depthState, 0);
@@ -136,13 +143,17 @@ void LitGBuffer::draw(Renderer& renderer)
 		struct Data
 		{
 			float ambient[4];
-			float pos[4];
+			float pos_type[4];
+			float dir[4];
 			float intensity[4];
 		};
 		Data* buffer = reinterpret_cast<Data*>(res.pData);
 
 		memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
-		memcpy(buffer->pos, &l.m_direction[0], sizeof(float[3]));
+		memcpy(buffer->pos_type, &l.m_position[0], sizeof(float[3]));
+		buffer->pos_type[3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
+
+		memcpy(buffer->dir, &l.m_direction[0], sizeof(float[3]));
 		memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
 		context->Unmap(m_constantBuffer, 0);
 
@@ -152,5 +163,18 @@ void LitGBuffer::draw(Renderer& renderer)
 
 		context->Draw(4, 0);
 	}
+
+	{
+		ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
+
+		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
+		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV, gbuffer.m_diffuseSRV };
+		context->PSSetShaderResources(0, 2, srvs);
+	}
+
+	context->PSSetShader(m_toneShader.getPixelShader(), nullptr, 0);
+	context->VSSetShader(m_toneShader.getVertexShader(), nullptr, 0);
+
+	context->Draw(4, 0);
 }
 

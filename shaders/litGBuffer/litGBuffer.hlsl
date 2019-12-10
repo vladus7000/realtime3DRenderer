@@ -1,7 +1,8 @@
 cbuffer globals
 {
 	float3 ambientLight;
-	float3 lightPosition;
+	float4 lightPosition_type;
+	float3 lightDirection;
 	float3 lightIntensity;
 }
 
@@ -21,7 +22,6 @@ struct psInput
 	float2 tcoord: TEXCOORD;
 };
 
-
 psInput vsmain(vsInput input)
 {
 	psInput output;
@@ -34,35 +34,26 @@ psInput vsmain(vsInput input)
 
 float3 litPixel(float2 tCoord)
 {
-	float3 diffuse = diffuseMap.Sample(samplerState, tCoord).xyz;
+	//float3 diffuse = diffuseMap.Sample(samplerState, tCoord).xyz;
 	float3 normal = normalMap.Sample(samplerState, tCoord).xyz;
-	//return normalize(normal);
+	float3 position = positionMap.Sample(samplerState, tCoord).xyz;
+	float intencity = 0.0f;
 
-	float intencity = saturate(dot(normalize(normal), normalize(lightPosition)));
-
-	float3 color = intencity * diffuse * lightIntensity;
-	float3 diffuseAmbient = diffuse * ambientLight;
-
-	if (intencity > 0.5f)
+	if (lightPosition_type.w == 0) // dir
 	{
-		return color;
+		intencity = saturate(dot(normalize(normal), normalize(lightDirection)));
 	}
-	else if(intencity > 0.01f)
+	else // point
 	{
-		return lerp(color, diffuseAmbient, intencity/4.0f);
-	}
-	else
-	{
-		return diffuseAmbient;
-	}
-}
+		float d = length(position - lightPosition_type.xyz);
+		float maxR = dot(float3(0.2126f, 0.7152f, 0.0722f), lightIntensity);
+		float att = 1.0f / (d * d);
+		if (d > maxR) discard;
 
-float3 toneMap(float3 hdrColor)
-{
-	//https://www.shadertoy.com/view/lslGzl
-	float exposure = 1.1f;
-	hdrColor *= exposure / (1.0f + hdrColor / exposure);
-	return hdrColor;
+		intencity = att * saturate(dot(normalize(normal), normalize(lightPosition_type.xyz - position)));
+	}
+	float3 color = intencity * /*diffuse*/ lightIntensity;
+	return color;
 }
 
 float4 psmain(psInput input) : SV_Target
@@ -71,9 +62,5 @@ float4 psmain(psInput input) : SV_Target
 	tcoord.y = 1.0f - tcoord.y;
 	
 	float3 hdrColor = litPixel(tcoord);
-
-	float3 ldrColor = toneMap(hdrColor);
-
-	float3 gammaCorrectedColor = pow(ldrColor, 1.0f / 2.2f);
-	return float4(gammaCorrectedColor, 0.0f);
+	return float4(hdrColor, 0.0f);
 }

@@ -5,6 +5,7 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+#include <algorithm>
 
 std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer)
 {
@@ -34,6 +35,8 @@ void World::initializeBuffers(Renderer& renderer)
 		std::vector<float> vertices;
 		std::vector<float> normals;
 		std::vector<float> tcoords;
+		glm::vec3 minPoint = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+		glm::vec3 maxPoint = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
 		//indices.reserve(mesh.indices.size());
 
@@ -56,6 +59,24 @@ void World::initializeBuffers(Renderer& renderer)
 					v[0][k] = m_attrib.vertices[3 * f0 + k];
 					v[1][k] = m_attrib.vertices[3 * f1 + k];
 					v[2][k] = m_attrib.vertices[3 * f2 + k];
+#undef min
+#undef max
+				}
+				glm::vec3 p[3] =
+				{
+					{v[0][0], v[0][1], v[0][2] },
+					{v[1][0], v[1][1], v[1][2] },
+					{v[2][0], v[2][1], v[2][2] }
+				};
+				for (int i = 0; i < 3; ++i)
+				{
+					minPoint.x = std::min(minPoint.x, p[i].x);
+					minPoint.y = std::min(minPoint.y, p[i].y);
+					minPoint.z = std::min(minPoint.z, p[i].z);
+
+					maxPoint.x = std::max(maxPoint.x, p[i].x);
+					maxPoint.y = std::max(maxPoint.y, p[i].y);
+					maxPoint.z = std::max(maxPoint.z, p[i].z);
 				}
 
 			vertices.push_back(v[0][0]);
@@ -118,7 +139,7 @@ void World::initializeBuffers(Renderer& renderer)
 		ID3D11ShaderResourceView* diffuse = nullptr;
 		if (foundIt == m_textures.end())
 		{
-			std::string path = m_materialBaseDir + std::string("/") + material.diffuse_texname;
+			std::string path = m_materialBaseDir + material.diffuse_texname;
 			D3DX11CreateShaderResourceViewFromFile(device, path.c_str(), 0, 0, &diffuse, 0);
 
 			m_textures[material.diffuse_texname] = diffuse;
@@ -129,6 +150,8 @@ void World::initializeBuffers(Renderer& renderer)
 		}
 
 		auto& ob = m_objects.back();
+		ob.maxCoord = maxPoint;
+		ob.minCoord = minPoint;
 		ob.name = shape.name;
 		ob.albedo = diffuse;
 		ob.numIndices = mesh.indices.size();//indices.size();

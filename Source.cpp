@@ -2,6 +2,9 @@
 #include "Core/Window.hpp"
 #include "Core/World.hpp"
 #include "Core/Renderer.hpp"
+#include <algorithm>
+#include <random>
+#include <vector>
 
 Camera g_mainCamera;
 
@@ -70,7 +73,7 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 				lastY = Y;
 			}
 
-			const float mouseSpeed = 5.0f * dt;
+			const float mouseSpeed = 10.0f * dt;
 			float dx = float(X - lastX) * mouseSpeed;
 			float dy = float(lastY - Y) * mouseSpeed;
 
@@ -103,30 +106,57 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	Renderer mainRenderer(mainWindow, mainWorld);
 	mainRenderer.initialize();
 
-	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
+	glm::vec3 minBB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+	glm::vec3 maxBB = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-	//while (it != mainWorld.getObjects().end())
-	//{
-	//	it->worldMatrix = glm::scale(glm::vec3{ 0.4f, 3.0f, 1.0f });
-	//	++it;
-	//}
+	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
+	while (newObjects != mainWorld.getObjects().end())
+	{
+#undef min
+#undef max
+		minBB.x = std::min(minBB.x, newObjects->minCoord.x);
+		minBB.y = std::min(minBB.y, newObjects->minCoord.y);
+		minBB.z = std::min(minBB.z, newObjects->minCoord.z);
+
+		maxBB.x = std::max(maxBB.x, newObjects->maxCoord.x);
+		maxBB.y = std::max(maxBB.y, newObjects->maxCoord.y);
+		maxBB.z = std::max(maxBB.z, newObjects->maxCoord.z);
+
+		++newObjects;
+	}
+
+	auto it = mainWorld.loadObjects("cube.obj", "", mainRenderer);
+	//it->worldMatrix = glm::translate(10.0f * glm::vec3{ 50.0f, 25.0f, 0.0f }) * glm::scale(glm::vec3{ 10.0f, 10.0f, 10.0f });
 
 	mainWorld.setAmbientLight({ 0.13f, 0.1f, 0.05f });
 
 	Light l;
 	l.m_direction = { 50.0f, 25.0f, 0.0f };
-	l.m_intensity = { 10.0f * 252.0f / 255.0f, 10.0f * 212.0f / 255.0f, 10.0f * 64.0f / 255.0f };
+	l.m_intensity = { 252.0f / 255.0f, 212.0f / 255.0f, 64.0f / 255.0f }; // Sun
+	l.m_intensity *= 5.0f;
 	l.m_type = Light::Type::Directional;
 
 	mainWorld.addLight(l);
-	//l.m_intensity = { 0.0f, 1.0f, 0.0f };
-	//mainWorld.addLight(l);
-	//l.m_intensity = { 0.0f, 1.0f, 1.0f };
-	//mainWorld.addLight(l);
 
-	l.m_direction = { -50.0f, 25.0f, 0.0f };
-	l.m_intensity = { 0.1f, 400.0f, 0.1f };
-	//mainWorld.addLight(l);
+	std::random_device rd;
+	std::mt19937 e2(rd());
+	std::uniform_real_distribution<> distX(minBB.x, maxBB.x);
+	std::uniform_real_distribution<> distY(minBB.y, maxBB.y);
+	std::uniform_real_distribution<> distZ(minBB.z, maxBB.z);
+	std::uniform_real_distribution<> colorRGB(5.0f, 20.0f);
+
+	std::vector<glm::vec3> targetPositions;
+	int lightNumber = 1000;
+	for (int i = 0; i < lightNumber; i++)
+	{
+		l.m_position = { distX(e2), distY(e2), distZ(e2) };
+		targetPositions.push_back(l.m_position);
+		l.m_intensity = { colorRGB(e2), colorRGB(e2), colorRGB(e2) };
+		//float in = glm::dot({ 0.2126f, 0.7152f, 0.0722f }, l.m_intensity);
+		l.m_type = Light::Type::Point;
+		mainWorld.addLight(l);
+	}
+
 
 	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.1f, 1000.f);
 	g_mainCamera.setView({ 120, 60, 4 }, { 0, 0, 0 });
@@ -137,8 +167,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	{
 		g_mainCamera.updateView();
 		mainWorld.setCamera(g_mainCamera);
-		///float delta = (360.0f / 15.0f) * dt;
-
+		float delta = 9.0f * dt;
+		auto& lights = mainWorld.getLights();
+		for (int i = 0; i < lightNumber; i++)
+		{
+			if (glm::length(lights[i].m_position - targetPositions[i]) < 0.5f)
+			{
+				targetPositions[i] = { distX(e2), distY(e2), distZ(e2) };
+			}
+			lights[i].m_position += glm::normalize(targetPositions[i] - lights[i].m_position) * delta;
+		}
 		mainWindow.peekMessages();
 
 		mainRenderer.beginFrame();

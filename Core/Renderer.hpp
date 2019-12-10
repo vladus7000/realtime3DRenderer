@@ -11,7 +11,7 @@
 class Pass;
 class Window;
 class World;
-
+class Camera;
 class Renderer
 {
 public:
@@ -33,6 +33,8 @@ public:
 	void beginFrame();
 	void drawFrame(float dt);
 	void endFrame();
+
+    void depthPrepass(const Camera& camera, Texture& tex);
 
 	ID3D11Device* getDevice() { return m_device; }
 	ID3D11DeviceContext* getContext() { return m_context; }
@@ -62,7 +64,8 @@ private:
 	ID3D11RenderTargetView* m_backBufferRT = nullptr;
 
 	Texture m_hdrTexture;
-
+    Shader m_depthPrepassShader;
+    ID3D11Buffer* m_depthPrepassCB = nullptr;
 	GBuffer m_gbuffer;
 
 	D3D11_VIEWPORT m_viewport;

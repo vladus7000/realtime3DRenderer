@@ -20,35 +20,10 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 {
 	const float dt = 1.0f / 60.0f;
 	const float speed = dt * 50.0f;
-	static bool first = false;
 	switch (msg) {
 
 	case WM_PAINT:
 		break;
-	case WM_KEYDOWN:
-		if (wParam == 'W')
-		{
-			g_mainCamera.moveForward(speed);
-			return 0L;
-		}
-		if (wParam == 'S')
-		{
-			g_mainCamera.moveBackward(speed);
-			return 0L;
-		}
-
-		if (wParam == 'A')
-		{
-			g_mainCamera.moveLeft(speed);
-			return 0L;
-		}
-
-		if (wParam == 'D')
-		{
-			g_mainCamera.moveRight(speed);
-			return 0L;
-		}
-	break;
 	case WM_LBUTTONDOWN:
 		mouseButtonPressed = true;
 
@@ -56,7 +31,6 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 		break;
 	case WM_LBUTTONUP:
 		mouseButtonPressed = false;
-		first = false;
 		return 0;
 		break;
 
@@ -66,16 +40,9 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 			int X = GET_X_LPARAM(lParam);
 			int Y = GET_Y_LPARAM(lParam);
 
-			if (!first)
-			{
-				first = true;
-				lastX = X;
-				lastY = Y;
-			}
-
 			const float mouseSpeed = 10.0f * dt;
-			float dx = float(X - lastX) * mouseSpeed;
-			float dy = float(lastY - Y) * mouseSpeed;
+			float dx = float(X - 400) * mouseSpeed;
+			float dy = float(300 - Y) * mouseSpeed;
 
 			static float yaw = 0.0f;
 			static float pitch = 0.0f;
@@ -83,14 +50,11 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 			pitch += -dy;
 
 			g_mainCamera.rotate(pitch, yaw);
-			lastX = X;
-			lastY = Y;
-
-			//POINT pt;
-			//pt.x = 400;
-			//pt.y = 300;
-			//ClientToScreen(hwnd, &pt);
-			//SetCursorPos(pt.x, pt.y);
+			POINT pt;
+			pt.x = 400;
+			pt.y = 300;
+			ClientToScreen(hwnd, &pt);
+			SetCursorPos(pt.x, pt.y);
 		}
 		return 0;
 		break;
@@ -163,10 +127,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 	float angle = 0.0f;
 	const float dt = 1.0f / 60.0f;
+    const float speed = dt * 50.0f;
 	while (!mainWindow.shouldClose())
 	{
-		g_mainCamera.updateView();
-		mainWorld.setCamera(g_mainCamera);
 		float delta = 9.0f * dt;
 		auto& lights = mainWorld.getLights();
 		for (int i = 0; i < lightNumber; i++)
@@ -178,6 +141,31 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 			lights[i].m_position += glm::normalize(targetPositions[i] - lights[i].m_position) * delta;
 		}
 		mainWindow.peekMessages();
+        bool wPressed = GetAsyncKeyState(0x57) & (1<<16); // w
+        bool aPressed = GetAsyncKeyState(0x41) & (1 << 16); // a
+        bool sPressed = GetAsyncKeyState(0x53) & (1 << 16); // s
+        bool dPressed = GetAsyncKeyState(0x44) & (1 << 16); // d
+
+        if (wPressed)
+        {
+            g_mainCamera.moveForward(speed);
+        }
+        if (sPressed)
+        {
+            g_mainCamera.moveBackward(speed);
+        }
+
+        if (aPressed)
+        {
+            g_mainCamera.moveLeft(speed);
+        }
+
+        if (dPressed)
+        {
+            g_mainCamera.moveRight(speed);
+        }
+		g_mainCamera.updateView();
+		mainWorld.setCamera(g_mainCamera);
 
 		mainRenderer.beginFrame();
 		mainRenderer.drawFrame(dt);

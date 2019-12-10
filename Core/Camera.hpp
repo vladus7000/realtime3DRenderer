@@ -38,6 +38,9 @@ public:
 	glm::mat4& getProjection() { return m_projection; }
 	glm::mat4& getView() { return m_view; }
 
+    const glm::mat4& getProjection() const { return m_projection; }
+    const glm::mat4& getView() const { return m_view; }
+
 	void updateView()
 	{
 		m_view = glm::lookAtLH(m_position, m_position + m_direction, glm::vec3(0, 1, 0));

@@ -43,10 +43,16 @@ Window::Window(int w, int h, HINSTANCE hInstance, std::function<LRESULT(HWND hwn
 void Window::peekMessages()
 {
 	MSG msg;
+    const int maxMessages(10);
+    int processed(0);
 	while (PeekMessage(&msg, m_hwnd, 0, 0, PM_REMOVE))
 	{
-
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+        processed++;
+        if (processed >= maxMessages)
+        {
+            return;
+        }
 	}
 }

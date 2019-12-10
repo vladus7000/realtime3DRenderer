@@ -5,6 +5,7 @@
 #include "Pass.hpp"
 #include "Window.hpp"
 #include "World.hpp"
+#include "Camera.hpp"
 
 #include "Passes/GenerateGBuffer/GenerateGbuffer.hpp"
 #include "Passes/LitGBuffer/LitGBuffer.hpp"
@@ -91,6 +92,17 @@ void Renderer::initialize()
 		m_device->CreateRenderTargetView(m_hdrTexture.m_texture, nullptr, &m_hdrTexture.m_RT);
 	}
 
+    { // depth prepass
+        m_depthPrepassShader = createShader("shaders/generateGBuffer/generateGBuffer.hlsl", "vsmain", "");
+
+        D3D11_BUFFER_DESC buffDesc;
+        buffDesc.ByteWidth = sizeof(float[16]) * 2;
+        buffDesc.Usage = D3D11_USAGE_DYNAMIC;
+        buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        buffDesc.MiscFlags = 0;
+        m_device->CreateBuffer(&buffDesc, nullptr, &m_depthPrepassCB);
+    }
 	///////////////////////
 	addMainPass(new GenerateGBuffer{});
 	addMainPass(new LitGBuffer{});
@@ -108,7 +120,8 @@ void Renderer::deinitialize()
 	{
 		delete post;
 	}
-	m_hdrTexture.release();
+
+    m_depthPrepassCB->Release();
 	m_mainPasses.clear();
 	m_postProcesses.clear();
 	m_gbuffer.release();
@@ -150,6 +163,47 @@ void Renderer::drawFrame(float dt)
 void Renderer::endFrame()
 {
 	m_framesRendered++;
+}
+
+void Renderer::depthPrepass(const Camera& camera, Texture& tex)
+{
+    m_context->ClearDepthStencilView(tex.m_DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+    ID3D11RenderTargetView* rtvs[] = { nullptr };
+    m_context->OMSetRenderTargets(1, rtvs, tex.m_DSV);
+
+    m_context->VSSetShader(m_depthPrepassShader.getVertexShader(), nullptr, 0);
+    m_context->PSSetShader(nullptr, nullptr, 0);
+    m_context->IASetInputLayout(m_depthPrepassShader.getInputLayout());
+
+    m_context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    ID3D11Buffer* constants[] = { m_depthPrepassCB };
+    m_context->VSSetConstantBuffers(0, 1, constants);
+
+    for (auto& mesh : m_world.getObjects())
+    {
+        D3D11_MAPPED_SUBRESOURCE res;
+        m_context->Map(m_depthPrepassCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+        struct Data
+        {
+            float mvp[16];
+            float model[16];
+        };
+        Data* buffer = reinterpret_cast<Data*>(res.pData);
+
+        glm::mat4 mvp = camera.getProjection() * camera.getView() * mesh.worldMatrix;
+
+        memcpy(buffer->mvp, &mvp[0][0], sizeof(float[16]));
+        memcpy(buffer->model, &(mesh.worldMatrix[0][0]), sizeof(float[16]));
+        m_context->Unmap(m_depthPrepassCB, 0);
+
+        unsigned int stride[] = { sizeof(float[3]), sizeof(float[3]) , sizeof(float[2]) };
+        unsigned int offsets[] = { 0, 0, 0 };
+        ID3D11Buffer* buffers[] = { mesh.vert_vb, mesh.norm_vb, mesh.tcoords_vb };
+        m_context->IASetVertexBuffers(0, 3, buffers, stride, offsets);
+        m_context->Draw(mesh.numIndices, 0);
+    }
 }
 
 Shader Renderer::createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout)
@@ -214,9 +268,9 @@ Shader Renderer::createShader(const std::string& fileName, const std::string& vs
 	t.close();
 
 	Shader ret(inputLayout, vertexShader, pixelShader);
-	inputLayout->Release();
-	vertexShader->Release();
-	pixelShader->Release();
+	if (inputLayout) inputLayout->Release();
+	if (vertexShader) vertexShader->Release();
+	if (pixelShader) pixelShader->Release();
 
 	return ret;
 }

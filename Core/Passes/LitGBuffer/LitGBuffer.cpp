@@ -92,8 +92,8 @@ void LitGBuffer::release(Renderer& renderer)
 
 	ID3D11RenderTargetView* rtvs[] = { nullptr };
 	context->OMSetRenderTargets(1, rtvs, nullptr);
-	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr, nullptr };
-	context->PSSetShaderResources(0, 3, srvs);
+	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr, nullptr, nullptr };
+	context->PSSetShaderResources(0, 4, srvs);
 	context->PSSetShader(nullptr, nullptr, 0);
 	context->VSSetShader(nullptr, nullptr, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);

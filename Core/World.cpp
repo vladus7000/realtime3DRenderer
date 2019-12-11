@@ -2,10 +2,12 @@
 #include "Renderer.hpp"
 
 #include <D3DX11tex.h>
+#undef min
+#undef max
 
+#include <algorithm>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
-#include <algorithm>
 
 std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer)
 {
@@ -68,8 +70,7 @@ void World::initializeBuffers(Renderer& renderer)
 					v[0][k] = m_attrib.vertices[3 * f0 + k];
 					v[1][k] = m_attrib.vertices[3 * f1 + k];
 					v[2][k] = m_attrib.vertices[3 * f2 + k];
-#undef min
-#undef max
+
 				}
 				glm::vec3 p[3] =
 				{

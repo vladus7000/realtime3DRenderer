@@ -84,7 +84,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	glm::vec3 minBB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 	glm::vec3 maxBB = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-	auto newObjects = mainWorld.loadObjects("tree/white_oak.obj", "tree/", mainRenderer);
+	auto newObjects = mainWorld.loadObjects("rungholt/rungholt.obj", "rungholt/", mainRenderer);
 	while (newObjects != mainWorld.getObjects().end())
 	{
 		newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
@@ -144,18 +144,26 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	float angle = 0.0f;
 	const float dt = 1.0f / 60.0f;
     const float speed = dt * 50.0f;
+	const float rotSpeed = 360.0f / 30.0 * dt;
 	while (!mainWindow.shouldClose())
 	{
 		float delta = 9.0f * dt;
 		auto& lights = mainWorld.getLights();
 		for (int i = 0; i < lightNumber; i++)
 		{
-			if (glm::length(lights[i].m_position - targetPositions[i]) < 0.5f)
+			if (glm::length(lights[i+1].m_position - targetPositions[i]) < 0.5f)
 			{
 				targetPositions[i] = { distX(e2), distY(e2), distZ(e2) };
 			}
-			lights[i].m_position += glm::normalize(targetPositions[i] - lights[i].m_position) * delta;
+			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
 		}
+		lights[0].m_position.x = 50.0f * sin(glm::radians(angle));
+		lights[0].m_position.z = 50.0f * cos(glm::radians(angle));
+		lights[0].m_direction = -lights[0].m_position;
+		lights[0].updateMatrices();
+		angle += rotSpeed;
+		if (angle > 360.0f)
+			angle = 0.0f;
 		mainWindow.peekMessages();
         bool wPressed = GetAsyncKeyState(0x57) & (1<<16); // w
         bool aPressed = GetAsyncKeyState(0x41) & (1 << 16); // a

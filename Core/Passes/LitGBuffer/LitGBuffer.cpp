@@ -23,7 +23,7 @@ void LitGBuffer::setup(Renderer& renderer)
 	{
 		auto device = renderer.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.ByteWidth = sizeof(float[4]) * 4; // must be multiply of 16
+		buffDesc.ByteWidth = sizeof(float[4]) * 4 + sizeof(float[16]); // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
 		buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -109,6 +109,7 @@ void LitGBuffer::draw(Renderer& renderer)
 	auto& world = renderer.getWorld();
 
 	auto& gbuffer = renderer.getGBuffer();
+	Texture* shadowMap = renderer.getTextureResource(Renderer::TextureResouces::ShadowMap);
 
 	{
 
@@ -119,8 +120,8 @@ void LitGBuffer::draw(Renderer& renderer)
 		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT };
 
 		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV };
-		context->PSSetShaderResources(0, 3, srvs);
+		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, shadowMap? shadowMap->m_SRV:nullptr };
+		context->PSSetShaderResources(0, shadowMap ? 4 : 3 , srvs);
 	}
 	context->PSSetSamplers(0, 1, &m_sampler);
 
@@ -146,6 +147,7 @@ void LitGBuffer::draw(Renderer& renderer)
 			float pos_type[4];
 			float dir[4];
 			float intensity[4];
+			float sunViewProjection[16];
 		};
 		Data* buffer = reinterpret_cast<Data*>(res.pData);
 
@@ -155,6 +157,10 @@ void LitGBuffer::draw(Renderer& renderer)
 
 		memcpy(buffer->dir, &l.m_direction[0], sizeof(float[3]));
 		memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
+
+		glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
+
+		memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
 		context->Unmap(m_constantBuffer, 0);
 
 		ID3D11Buffer* constants[] = { m_constantBuffer };

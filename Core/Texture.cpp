@@ -36,7 +36,8 @@ void Texture::createDepthStencilTexture(int w, int h, Renderer& renderer)
 {
     release();
     auto device = renderer.getDevice();
-
+	m_w = w;
+	m_h = h;
     { //depth stencil
         D3D11_TEXTURE2D_DESC desc;
         desc.ArraySize = 1;

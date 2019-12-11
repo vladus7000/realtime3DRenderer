@@ -7,8 +7,12 @@
 #include "World.hpp"
 #include "Camera.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "Passes/GenerateGBuffer/GenerateGbuffer.hpp"
 #include "Passes/LitGBuffer/LitGBuffer.hpp"
+#include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
 
 Renderer::Renderer(Window& window,  World& world)
 	: m_window(window)
@@ -104,9 +108,42 @@ void Renderer::initialize()
         m_device->CreateBuffer(&buffDesc, nullptr, &m_depthPrepassCB);
     }
 	///////////////////////
+
+	{// env texture
+		stbi_set_flip_vertically_on_load(true);
+		int width, height, nrComponents;
+		float *data = stbi_loadf("noon_grass_1k.hdr", &width, &height, &nrComponents, 0);
+		if (data)
+		{
+			D3D11_TEXTURE2D_DESC desc;
+			desc.ArraySize = 1;
+			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+			desc.CPUAccessFlags = 0;
+			desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+			desc.Width = width;
+			desc.Height = height;
+			desc.MipLevels = 1;
+			desc.MiscFlags = 0;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.Usage = D3D11_USAGE_DEFAULT;
+
+			D3D11_SUBRESOURCE_DATA subData;
+			subData.pSysMem = data;
+
+			m_device->CreateTexture2D(&desc, nullptr, &m_envHDR.m_texture);
+			free(data);
+
+			m_device->CreateShaderResourceView(m_hdrTexture.m_texture, nullptr, &m_envHDR.m_SRV);
+
+			registerTexture(TextureResouces::EnvironmentHDR, &m_envHDR);
+		}
+	}
+
 	addMainPass(new GenerateGBuffer{});
+	addMainPass(new GenerateShadowMaps{});
 	addMainPass(new LitGBuffer{});
-	// Tonemap pass
+	// PostProcesses
 }
 
 void Renderer::deinitialize()
@@ -129,6 +166,34 @@ void Renderer::deinitialize()
 	m_swapChain->Release();
 	m_device->Release();
 	m_context->Release();
+}
+
+void Renderer::registerTexture(TextureResouces id, Texture* texture)
+{
+	auto foundIt = m_textureResources.find(id);
+	if (foundIt == m_textureResources.end())
+	{
+		m_textureResources[id] = texture;
+	}
+}
+
+void Renderer::unregisterTexture(TextureResouces id)
+{
+	auto foundIt = m_textureResources.find(id);
+	if (foundIt != m_textureResources.end())
+	{
+		m_textureResources.erase(foundIt);
+	}
+}
+
+Texture* Renderer::getTextureResource(TextureResouces id)
+{
+	auto foundIt = m_textureResources.find(id);
+	if (foundIt != m_textureResources.end())
+	{
+		return foundIt->second;
+	}
+	return nullptr;
 }
 
 void Renderer::beginFrame()
@@ -165,9 +230,9 @@ void Renderer::endFrame()
 	m_framesRendered++;
 }
 
-void Renderer::depthPrepass(const Camera& camera, Texture& tex)
+void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y, float w, float h)
 {
-    m_context->ClearDepthStencilView(tex.m_DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearDepthStencilView(tex.m_DSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     ID3D11RenderTargetView* rtvs[] = { nullptr };
     m_context->OMSetRenderTargets(1, rtvs, tex.m_DSV);
@@ -181,6 +246,11 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex)
     ID3D11Buffer* constants[] = { m_depthPrepassCB };
     m_context->VSSetConstantBuffers(0, 1, constants);
 
+	m_viewport.Width = w;
+	m_viewport.Height = h;
+	m_viewport.TopLeftX = x;
+	m_viewport.TopLeftY = y;
+	m_context->RSSetViewports(1, &m_viewport);
     for (auto& mesh : m_world.getObjects())
     {
         D3D11_MAPPED_SUBRESOURCE res;
@@ -204,6 +274,12 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex)
         m_context->IASetVertexBuffers(0, 3, buffers, stride, offsets);
         m_context->Draw(mesh.numIndices, 0);
     }
+
+	m_viewport.Width = m_window.getWidth();
+	m_viewport.Height = m_window.getHeight();
+	m_viewport.TopLeftX = 0.0f;
+	m_viewport.TopLeftY = 0.0f;
+	m_context->RSSetViewports(1, &m_viewport);
 }
 
 Shader Renderer::createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout)

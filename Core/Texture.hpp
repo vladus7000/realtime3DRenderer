@@ -13,6 +13,8 @@ public:
 	ID3D11ShaderResourceView* m_SRV = nullptr;
 	ID3D11RenderTargetView* m_RT = nullptr;
 	ID3D11DepthStencilView* m_DSV = nullptr;
+	int m_w = 0;
+	int m_h = 0;
 private:
     void release();
 };

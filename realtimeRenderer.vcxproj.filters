@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Core\Passes\LitGBuffer">
       <UniqueIdentifier>{f01eac67-ac6b-4369-a239-7870e5246f31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Passes\GenerateShadowMaps">
+      <UniqueIdentifier>{f03fd3f7-7a53-45b5-b560-573c878e0d1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -56,6 +59,9 @@
     </ClCompile>
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBuffer.cpp">
       <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp">
+      <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +118,9 @@
     </ClInclude>
     <ClInclude Include="World.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.hpp">
+      <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

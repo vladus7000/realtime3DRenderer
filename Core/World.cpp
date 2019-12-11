@@ -28,6 +28,15 @@ void World::initializeBuffers(Renderer& renderer)
 {
 	auto device = renderer.getDevice();
 
+	auto foundIt = m_textures.find("defaultT");
+	if (foundIt == m_textures.end())
+	{
+		ID3D11ShaderResourceView* diffuse = nullptr;
+		D3DX11CreateShaderResourceViewFromFile(device, "default.png", 0, 0, &diffuse, 0);
+
+		m_textures["defaultT"] = diffuse;
+	}
+
 	for (auto& shape : m_shapes)
 	{
 		auto& mesh = shape.mesh;
@@ -135,7 +144,7 @@ void World::initializeBuffers(Renderer& renderer)
 
 		auto& material = m_materials[mesh.material_ids[0]];
 		material.diffuse_texname;
-		auto foundIt = m_textures.find(material.diffuse_texname);
+		auto foundIt = m_textures.find(material.diffuse_texname.empty() ? "defaultT": material.diffuse_texname);
 		ID3D11ShaderResourceView* diffuse = nullptr;
 		if (foundIt == m_textures.end())
 		{

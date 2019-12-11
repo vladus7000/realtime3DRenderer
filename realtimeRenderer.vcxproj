@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{1B316A6D-0432-4199-AE5C-24D754E10CF1}</ProjectGuid>
     <RootNamespace>Dx11</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,13 +41,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -126,6 +126,7 @@
     <ClCompile Include="Core\GBuffer.cpp" />
     <ClCompile Include="Core\Light.cpp" />
     <ClCompile Include="Core\Passes\GenerateGBuffer\GenerateGbuffer.cpp" />
+    <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp" />
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBuffer.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
     <ClCompile Include="Core\Shader.cpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="Core\Light.hpp" />
     <ClInclude Include="Core\Pass.hpp" />
     <ClInclude Include="Core\Passes\GenerateGBuffer\GenerateGbuffer.hpp" />
+    <ClInclude Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.hpp" />
     <ClInclude Include="Core\Passes\LitGBuffer\LitGBuffer.hpp" />
     <ClInclude Include="Core\Renderer.hpp" />
     <ClInclude Include="Core\Shader.hpp" />

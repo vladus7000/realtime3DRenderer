@@ -7,6 +7,7 @@
 #include <vector>
 #include "GBuffer.hpp"
 #include "Texture.hpp"
+#include <map>
 
 class Pass;
 class Window;
@@ -15,6 +16,11 @@ class Camera;
 class Renderer
 {
 public:
+	enum class TextureResouces
+	{
+		ShadowMap,
+		EnvironmentHDR
+	};
 	Renderer(Window& window, World& world);
 
 	Renderer(const Renderer& rhs) = delete;
@@ -30,11 +36,15 @@ public:
 	void initialize();
 	void deinitialize();
 
+	void registerTexture(TextureResouces id, Texture* texture);
+	void unregisterTexture(TextureResouces id);
+	Texture* getTextureResource(TextureResouces id);
+
 	void beginFrame();
 	void drawFrame(float dt);
 	void endFrame();
 
-    void depthPrepass(const Camera& camera, Texture& tex);
+    void depthPrepass(const Camera& camera, Texture& tex, float x, float y, float w, float h);
 
 	ID3D11Device* getDevice() { return m_device; }
 	ID3D11DeviceContext* getContext() { return m_context; }
@@ -67,9 +77,10 @@ private:
     Shader m_depthPrepassShader;
     ID3D11Buffer* m_depthPrepassCB = nullptr;
 	GBuffer m_gbuffer;
-
+	Texture m_envHDR;
 	D3D11_VIEWPORT m_viewport;
 
+	std::map<TextureResouces, Texture*> m_textureResources;
 	std::vector<Pass*> m_mainPasses;
 	std::vector<Pass*> m_postProcesses;
 	int m_framesRendered = 0;

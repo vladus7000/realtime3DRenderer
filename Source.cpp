@@ -25,15 +25,26 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 	case WM_PAINT:
 		break;
 	case WM_LBUTTONDOWN:
+	{
 		mouseButtonPressed = true;
-
+		POINT pt;
+		pt.x = 400;
+		pt.y = 300;
+		ClientToScreen(hwnd, &pt);
+		SetCursorPos(pt.x, pt.y);
+		ShowCursor(false);
 		return 0;
+	}
 		break;
 	case WM_LBUTTONUP:
 		mouseButtonPressed = false;
+		ShowCursor(true);
 		return 0;
 		break;
-
+	case WM_MOUSELEAVE:
+		mouseButtonPressed = false;
+		ShowCursor(true);
+		break;
 	case WM_MOUSEMOVE:
 		if (mouseButtonPressed)
 		{
@@ -73,9 +84,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	glm::vec3 minBB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 	glm::vec3 maxBB = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
+	auto newObjects = mainWorld.loadObjects("tree/white_oak.obj", "tree/", mainRenderer);
 	while (newObjects != mainWorld.getObjects().end())
 	{
+		newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
 #undef min
 #undef max
 		minBB.x = std::min(minBB.x, newObjects->minCoord.x);
@@ -90,16 +102,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	}
 
 	auto it = mainWorld.loadObjects("cube.obj", "", mainRenderer);
-	//it->worldMatrix = glm::translate(10.0f * glm::vec3{ 50.0f, 25.0f, 0.0f }) * glm::scale(glm::vec3{ 10.0f, 10.0f, 10.0f });
+	it->worldMatrix =  glm::scale(glm::vec3{ 300.0f, 0.1f, 300.0f });
 
 	mainWorld.setAmbientLight({ 0.13f, 0.1f, 0.05f });
 
 	Light l;
-	l.m_direction = { 50.0f, 25.0f, 0.0f };
+	l.m_direction = -glm::vec3{ 50.0f, 25.0f, 0.0f };
 	l.m_intensity = { 252.0f / 255.0f, 212.0f / 255.0f, 64.0f / 255.0f }; // Sun
 	l.m_intensity *= 5.0f;
+	l.m_position = glm::vec3{ 50.0f, 25.0f, 0.0f };
 	l.m_type = Light::Type::Directional;
+	l.perspective = false;
+	l.updateMatrices();
 
+	auto cam = l.m_camera;
 	mainWorld.addLight(l);
 
 	std::random_device rd;
@@ -110,7 +126,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	std::uniform_real_distribution<> colorRGB(5.0f, 20.0f);
 
 	std::vector<glm::vec3> targetPositions;
-	int lightNumber = 1000;
+	int lightNumber = 1;
 	for (int i = 0; i < lightNumber; i++)
 	{
 		l.m_position = { distX(e2), distY(e2), distZ(e2) };

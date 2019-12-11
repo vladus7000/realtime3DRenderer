@@ -4,11 +4,13 @@ cbuffer globals
 	float4 lightPosition_type;
 	float3 lightDirection;
 	float3 lightIntensity;
+	float4x4 sunViewProjection;
 }
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 Texture2D positionMap : register(t2);
+Texture2D shadowMap : register(t3);
 SamplerState samplerState : register(s0);
 
 struct vsInput
@@ -41,7 +43,29 @@ float3 litPixel(float2 tCoord)
 
 	if (lightPosition_type.w == 0) // dir
 	{
-		intencity = saturate(dot(normalize(normal), normalize(lightDirection)));
+		float4 projectedPoint = mul(sunViewProjection, float4(position, 1.0f));
+		projectedPoint.xyz /= projectedPoint.w;
+		float bias = max(0.05 * (1.0 - dot(normalize(normal), normalize(-lightDirection))), 0.005);
+		float z = projectedPoint.z;
+		float2 newTCoord = projectedPoint.xy * 0.5f + float2(0.5, 0.5);
+		newTCoord.y = 1.0f - newTCoord.y;
+		//float zShadowMap = shadowMap.Sample(samplerState, newTCoord).x;
+
+		float shadow = 0.0f;
+		float2 texSize = float2(1.0 / 1024.0, 1.0 / 1024.0);
+		for (int x = -1; x <= 1; x++)
+		{
+			for (int y = -1; y <= 1; y++)
+			{
+				float depth = shadowMap.Sample(samplerState, newTCoord + float2(x,y)*texSize ).x;
+				shadow += (z - bias) < depth ? 1.0f : 0.0f;
+			}
+		}
+		shadow /= 9.0f;
+		if (shadow > 0.0f/*z <= zShadowMap*/)
+		{
+			intencity = shadow * saturate(dot(normalize(normal), normalize(-lightDirection)));
+		}
 	}
 	else // point
 	{

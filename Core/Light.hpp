@@ -25,7 +25,7 @@ public:
 		}
 		else
 		{
-			m_camera.setOrtho(-100.0f, 100.0f, -100.0f, 100.0f, 0.1f, 1000.0f);
+			m_camera.setOrtho(-60.0f, 60.f, -50.0f, 80.0f, 0.1f, 1000.0f);
 		}
 	}
 

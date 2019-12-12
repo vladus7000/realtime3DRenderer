@@ -9,6 +9,7 @@
 #include "tiny_obj_loader.h"
 #include "Light.hpp"
 #include <map>
+#include <glm/gtx/compatibility.hpp>
 
 class Renderer;
 
@@ -32,7 +33,9 @@ public:
 		glm::vec3 maxCoord = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 	};
 
-	World() {}
+	World();
+
+	void initSun(Renderer& renderer);
 
 	std::vector<Mesh>::iterator loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer);
 	void deinitializeBuffers();
@@ -48,11 +51,16 @@ public:
 	const std::vector<Mesh>& getObjects() const { return m_objects; }
 	std::vector<Mesh>& getObjects() { return m_objects; }
 
-	void addLight(Light l) { m_lights.push_back(l); }
+	void addLight(Light l);
 	std::vector<Light>& getLights() { return m_lights; }
 	const std::vector<Light>& getLights() const { return m_lights; }
-	glm::vec3 getAmbientLight() const { return m_ambientLight; }
-	void setAmbientLight(const glm::vec3& l) { m_ambientLight = l; }
+
+	bool getIsDay() { return m_isDay; }
+
+	void setSunAngle(float angle) { m_sunAngle = angle; }
+	float getSunAngle() { return m_sunAngle; }
+
+	void updateSun(float dt);
 
 private:
 	void initializeBuffers(Renderer& renderer);
@@ -63,7 +71,14 @@ private:
 	std::vector<tinyobj::material_t> m_materials;
 	std::vector<Mesh> m_objects;
 	std::vector<Light> m_lights;
-	glm::vec3 m_ambientLight = {1.0f, 1.0f, 1.0f};
+
 	std::map<std::string, ID3D11ShaderResourceView*> m_textures;
 	std::string m_materialBaseDir;
+
+	Mesh* m_sunObject;
+	Light* m_sunLight;
+	bool m_isDay = true;
+	float m_sunAngle = 0.0f;
+	glm::vec3 m_sunColorMorning;
+	glm::vec3 m_sunColorDay;
 };

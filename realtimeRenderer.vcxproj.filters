@@ -28,6 +28,9 @@
     <Filter Include="Source Files\Core\Passes\GenerateShadowMaps">
       <UniqueIdentifier>{f03fd3f7-7a53-45b5-b560-573c878e0d1b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Passes\SkyBox">
+      <UniqueIdentifier>{cc810548-61cd-4373-a635-e65ee17b31e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -62,6 +65,9 @@
     </ClCompile>
     <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp">
       <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\SkyBox\SkyBox.cpp">
+      <Filter>Source Files\Core\Passes\SkyBox</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -121,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.hpp">
       <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\SkyBox\SkyBox.hpp">
+      <Filter>Source Files\Core\Passes\SkyBox</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

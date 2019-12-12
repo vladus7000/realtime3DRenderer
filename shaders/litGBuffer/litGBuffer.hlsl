@@ -52,7 +52,7 @@ float3 litPixel(float2 tCoord)
 		//float zShadowMap = shadowMap.Sample(samplerState, newTCoord).x;
 
 		float shadow = 0.0f;
-		float2 texSize = float2(1.0 / 1024.0, 1.0 / 1024.0);
+		float2 texSize = float2(1.0 / 2048.0, 1.0 / 2048.0);
 		for (int x = -1; x <= 1; x++)
 		{
 			for (int y = -1; y <= 1; y++)

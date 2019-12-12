@@ -9,6 +9,29 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+World::World()
+{
+}
+
+void World::initSun(Renderer& renderer)
+{
+	auto it = loadObjects("cube.obj", "", renderer);
+	m_sunObject = &*it;
+	m_sunObject->name = "sunObject_";
+	m_sunColorMorning = { 243.0f / 255.0f, 60.0f / 255.0f, 10.0f / 255.0f };
+	m_sunColorDay = { 252.0f / 255.0f, 212.0f / 255.0f, 64.0f / 255.0f };
+	Light l;
+	l.m_direction = -glm::vec3{ 90.0f, 25.0f, 0.0f };
+	l.m_intensity = m_sunColorDay; // Sun
+	l.m_intensity *= 5.0f;
+	l.m_position = glm::vec3{ 500.0f, 25.0f, 0.0f };
+	l.m_type = Light::Type::Directional;
+	l.perspective = false;
+	l.updateMatrices();
+	m_lights.push_back(l);
+	m_sunLight = &m_lights[0];
+}
+
 std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer)
 {
 	std::string warn;
@@ -22,6 +45,15 @@ std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileNam
 
 	initializeBuffers(renderer);
 	m_materialBaseDir = "";
+
+	for (int i = 0; i < m_objects.size(); i++)
+	{
+		if (m_objects[i].name == "sunObject_")
+		{
+			m_sunObject = &m_objects[i];
+			break;
+		}
+	}
 
 	return m_objects.begin() + oldSize;
 }
@@ -233,4 +265,56 @@ void World::deinitializeBuffers()
 	{
 		val.second->Release();
 	}
+}
+
+void World::addLight(Light l)
+{
+	m_lights.push_back(l);
+	for (int i = 0; i < m_lights.size(); i++)
+	{
+		if (m_lights[i].m_type == Light::Type::Directional)
+		{
+			m_sunLight = &m_lights[i];
+			break;
+		}
+	}
+}
+
+void World::updateSun(float dt)
+{
+	const float rotSpeed = 360.0f / 60.0 * dt;
+
+	m_sunAngle += rotSpeed;
+	if (m_sunAngle > 360.0f)
+	{
+		m_sunAngle = 0.0f;
+	}
+
+	m_sunLight->m_position.x = 500.0f * cos(glm::radians(m_sunAngle));
+	m_sunLight->m_position.y = 500.0f * sin(glm::radians(m_sunAngle));
+
+	m_sunObject->worldMatrix = glm::translate(m_sunLight->m_position) * glm::scale(glm::vec3{ 5.0f,5.0f,5.0f });
+
+	m_sunLight->m_direction = -m_sunLight->m_position;
+	m_sunLight->updateMatrices();
+
+	m_isDay = (m_sunAngle >= 0.0f) && (m_sunAngle < 180.0f);
+	m_sunLight->enabled = m_isDay;
+
+	m_sunLight->m_intensity = m_sunColorDay;
+	float Int = 5.0f;
+
+	if (m_sunAngle >= 0.0f && m_sunAngle < 60.0f)
+	{
+		m_sunLight->m_intensity = glm::lerp(m_sunColorMorning, m_sunColorDay, m_sunAngle / 60.0f);
+		Int = glm::lerp(2.0f, 5.0f, m_sunAngle / 60.0f);
+	}
+	if (m_sunAngle >= 120.0f && m_sunAngle < 180.0)
+	{
+		m_sunLight->m_intensity = glm::lerp(m_sunColorDay, m_sunColorMorning, (m_sunAngle - 120.0f) / 60.0f);
+		Int = glm::lerp(5.0f, 2.0f, (m_sunAngle - 120.0f) / 60.0f);
+	}
+
+	m_sunLight->m_intensity *= Int;
+
 }

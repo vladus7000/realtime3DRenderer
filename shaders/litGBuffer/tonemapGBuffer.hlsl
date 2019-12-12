@@ -4,10 +4,15 @@ cbuffer globals
 	float4 lightPosition_type;
 	float3 lightDirection;
 	float3 lightIntensity;
+	float4x4 sunViewProjection;
+	float3 camPos;
 }
 
 Texture2D hdrMap : register(t0);
 Texture2D diffuseMap : register(t1);
+Texture2D normalMap : register(t2);
+Texture2D posMap : register(t3);
+TextureCube	g_EnvironmentTexture : register(t4);
 SamplerState samplerState : register(s0);
 
 struct vsInput
@@ -43,9 +48,13 @@ float3 toneMap(float3 hdrColor)
 float3 finalColor(float3 light, float2 tcoord)
 {
 	float3 diffuseColor = diffuseMap.Sample(samplerState, tcoord).xyz;
+	float3 normal = normalMap.Sample(samplerState, tcoord).xyz;
+	float3 posPixel = posMap.Sample(samplerState, tcoord).xyz;
+	//float3 refl = reflect(normalize(camPos.xyz - posPixel), normal);
+	float3 fromeCubeMap = g_EnvironmentTexture.Sample(samplerState, normal).xyz;
 	float intensity = dot(float3(0.2126f, 0.7152f, 0.0722f), light); //float3(0.2126f, 0.7152f, 0.0722f)
 
-	return lerp(ambientLight * diffuseColor, diffuseColor * light, saturate(intensity));
+	return lerp(fromeCubeMap * diffuseColor, diffuseColor * light, saturate(intensity));
 }
 
 float4 psmain(psInput input) : SV_Target

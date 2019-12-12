@@ -25,6 +25,11 @@ void Texture::release()
         m_DSV->Release();
         m_DSV = nullptr;
     }
+	if (m_sampler)
+	{
+		m_sampler->Release();
+		m_sampler = nullptr;
+	}
 }
 
 Texture::~Texture()

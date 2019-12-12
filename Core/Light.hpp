@@ -25,7 +25,7 @@ public:
 		}
 		else
 		{
-			m_camera.setOrtho(-60.0f, 60.f, -50.0f, 80.0f, 0.1f, 1000.0f);
+			m_camera.setOrtho(-800.0f, 800.f, -800.0f, 800.0f, 0.1f, 1000.0f);
 		}
 	}
 
@@ -37,5 +37,6 @@ public:
 	float m_cutoff;
 	bool perspective = true;
 	float m_aspect = 800.0f / 600.0f;
+	bool enabled = true;
 	Camera m_camera;
 };

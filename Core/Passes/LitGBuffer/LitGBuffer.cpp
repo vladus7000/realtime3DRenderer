@@ -23,7 +23,7 @@ void LitGBuffer::setup(Renderer& renderer)
 	{
 		auto device = renderer.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.ByteWidth = sizeof(float[4]) * 4 + sizeof(float[16]); // must be multiply of 16
+		buffDesc.ByteWidth = sizeof(float[4]) * 5 + sizeof(float[16]); // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
 		buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -92,8 +92,8 @@ void LitGBuffer::release(Renderer& renderer)
 
 	ID3D11RenderTargetView* rtvs[] = { nullptr };
 	context->OMSetRenderTargets(1, rtvs, nullptr);
-	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr, nullptr, nullptr };
-	context->PSSetShaderResources(0, 4, srvs);
+	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr, nullptr, nullptr,nullptr };
+	context->PSSetShaderResources(0, 5, srvs);
 	context->PSSetShader(nullptr, nullptr, 0);
 	context->VSSetShader(nullptr, nullptr, 0);
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
@@ -135,10 +135,12 @@ void LitGBuffer::draw(Renderer& renderer)
 
 	context->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
 
-	glm::vec3 ambient = renderer.getWorld().getAmbientLight();
-
 	for (auto& l : renderer.getWorld().getLights())
 	{
+		if (!l.enabled)
+		{
+			continue;
+		}
 		D3D11_MAPPED_SUBRESOURCE res;
 		context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 		struct Data
@@ -148,10 +150,11 @@ void LitGBuffer::draw(Renderer& renderer)
 			float dir[4];
 			float intensity[4];
 			float sunViewProjection[16];
+			float camPos[4];
 		};
 		Data* buffer = reinterpret_cast<Data*>(res.pData);
 
-		memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
+		//memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
 		memcpy(buffer->pos_type, &l.m_position[0], sizeof(float[3]));
 		buffer->pos_type[3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
 
@@ -161,6 +164,7 @@ void LitGBuffer::draw(Renderer& renderer)
 		glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
 
 		memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
+		memcpy(buffer->camPos, &renderer.getWorld().getCamera().getPosition()[0], sizeof(float[3]));
 		context->Unmap(m_constantBuffer, 0);
 
 		ID3D11Buffer* constants[] = { m_constantBuffer };
@@ -171,11 +175,12 @@ void LitGBuffer::draw(Renderer& renderer)
 	}
 
 	{
+		Texture* cubeMap = renderer.getTextureResource(Renderer::TextureResouces::EnvCubeMap);
 		ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
 		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV, gbuffer.m_diffuseSRV };
-		context->PSSetShaderResources(0, 2, srvs);
+		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV, gbuffer.m_diffuseSRV,gbuffer.m_normalSRV, gbuffer.m_positionSRV, cubeMap->m_SRV };
+		context->PSSetShaderResources(0, 5, srvs);
 	}
 
 	context->PSSetShader(m_toneShader.getPixelShader(), nullptr, 0);

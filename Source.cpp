@@ -84,10 +84,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	glm::vec3 minBB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 	glm::vec3 maxBB = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-	auto newObjects = mainWorld.loadObjects("rungholt/rungholt.obj", "rungholt/", mainRenderer);
+	mainWorld.initSun(mainRenderer);
+
+	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
 	while (newObjects != mainWorld.getObjects().end())
 	{
-		newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
+		//newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
 #undef min
 #undef max
 		minBB.x = std::min(minBB.x, newObjects->minCoord.x);
@@ -101,22 +103,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		++newObjects;
 	}
 
-	auto it = mainWorld.loadObjects("cube.obj", "", mainRenderer);
-	it->worldMatrix =  glm::scale(glm::vec3{ 300.0f, 0.1f, 300.0f });
+	auto groundObject = mainWorld.loadObjects("cube.obj", "", mainRenderer);
+	groundObject->worldMatrix =  glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
+	groundObject->name = "ground";
 
-	mainWorld.setAmbientLight({ 0.13f, 0.1f, 0.05f });
-
-	Light l;
-	l.m_direction = -glm::vec3{ 50.0f, 25.0f, 0.0f };
-	l.m_intensity = { 252.0f / 255.0f, 212.0f / 255.0f, 64.0f / 255.0f }; // Sun
-	l.m_intensity *= 5.0f;
-	l.m_position = glm::vec3{ 50.0f, 25.0f, 0.0f };
-	l.m_type = Light::Type::Directional;
-	l.perspective = false;
-	l.updateMatrices();
-
-	auto cam = l.m_camera;
-	mainWorld.addLight(l);
+	//mainWorld.addLight(l);
 
 	std::random_device rd;
 	std::mt19937 e2(rd());
@@ -127,6 +118,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 	std::vector<glm::vec3> targetPositions;
 	int lightNumber = 1;
+	Light l;
 	for (int i = 0; i < lightNumber; i++)
 	{
 		l.m_position = { distX(e2), distY(e2), distZ(e2) };
@@ -141,10 +133,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.1f, 1000.f);
 	g_mainCamera.setView({ 120, 60, 4 }, { 0, 0, 0 });
 
-	float angle = 0.0f;
 	const float dt = 1.0f / 60.0f;
     const float speed = dt * 50.0f;
-	const float rotSpeed = 360.0f / 30.0 * dt;
+
 	while (!mainWindow.shouldClose())
 	{
 		float delta = 9.0f * dt;
@@ -157,13 +148,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 			}
 			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
 		}
-		lights[0].m_position.x = 50.0f * sin(glm::radians(angle));
-		lights[0].m_position.z = 50.0f * cos(glm::radians(angle));
-		lights[0].m_direction = -lights[0].m_position;
-		lights[0].updateMatrices();
-		angle += rotSpeed;
-		if (angle > 360.0f)
-			angle = 0.0f;
+		
+		mainWorld.updateSun(dt);
 		mainWindow.peekMessages();
         bool wPressed = GetAsyncKeyState(0x57) & (1<<16); // w
         bool aPressed = GetAsyncKeyState(0x41) & (1 << 16); // a

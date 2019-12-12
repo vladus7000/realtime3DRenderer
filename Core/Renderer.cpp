@@ -6,6 +6,7 @@
 #include "Window.hpp"
 #include "World.hpp"
 #include "Camera.hpp"
+#include <D3DX11tex.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -13,6 +14,7 @@
 #include "Passes/GenerateGBuffer/GenerateGbuffer.hpp"
 #include "Passes/LitGBuffer/LitGBuffer.hpp"
 #include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
+#include "Passes/SkyBox/SkyBox.hpp"
 
 Renderer::Renderer(Window& window,  World& world)
 	: m_window(window)
@@ -140,10 +142,30 @@ void Renderer::initialize()
 		}
 	}
 
+	{// cubamapTexture
+		ID3D11Texture2D* texture;
+		ID3D11ShaderResourceView* shaderResView;	
+		D3DX11CreateShaderResourceViewFromFile(m_device, "desert.dds", 0, 0, &m_cubeMap.m_SRV, nullptr);
+		if (m_cubeMap.m_SRV)
+		{
+			registerTexture(TextureResouces::EnvCubeMap, &m_cubeMap);
+		}
+
+		D3D11_SAMPLER_DESC sampler;
+		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
+		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		m_device->CreateSamplerState(&sampler, &m_cubeMap.m_sampler);
+	}
+
 	addMainPass(new GenerateGBuffer{});
 	addMainPass(new GenerateShadowMaps{});
 	addMainPass(new LitGBuffer{});
 	// PostProcesses
+	addPostPass(new SkyBox{});
 }
 
 void Renderer::deinitialize()

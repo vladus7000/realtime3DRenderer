@@ -9,7 +9,7 @@ GenerateShadowMaps::~GenerateShadowMaps()
 
 void GenerateShadowMaps::setup(Renderer& renderer)
 {
-	const int depthSize = 1024;
+	const int depthSize = 2048;
 	if (!m_depthTexture.m_DSV)
 	{
 		m_depthTexture.createDepthStencilTexture(depthSize, depthSize, renderer);

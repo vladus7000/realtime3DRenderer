@@ -19,7 +19,8 @@ public:
 	enum class TextureResouces
 	{
 		ShadowMap,
-		EnvironmentHDR
+		EnvironmentHDR,
+		EnvCubeMap
 	};
 	Renderer(Window& window, World& world);
 
@@ -78,6 +79,7 @@ private:
     ID3D11Buffer* m_depthPrepassCB = nullptr;
 	GBuffer m_gbuffer;
 	Texture m_envHDR;
+	Texture m_cubeMap;
 	D3D11_VIEWPORT m_viewport;
 
 	std::map<TextureResouces, Texture*> m_textureResources;

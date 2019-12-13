@@ -2,6 +2,7 @@
 #include "Renderer.hpp"
 #include "World.hpp"
 #include "GBuffer.hpp"
+#include "Resources.hpp"
 
 GenerateGBuffer::~GenerateGBuffer()
 {
@@ -12,12 +13,11 @@ GenerateGBuffer::~GenerateGBuffer()
 	m_sampler->Release();
 }
 
-void GenerateGBuffer::setup(Renderer& renderer)
+void GenerateGBuffer::setup(Renderer& renderer, Resources& resources)
 {
-	auto context = renderer.getContext();
 	if (!m_constantBuffer)
 	{
-		auto device = renderer.getDevice();
+		auto device = resources.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
 		buffDesc.ByteWidth = sizeof(float[16]) * 2; // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -26,7 +26,7 @@ void GenerateGBuffer::setup(Renderer& renderer)
 		buffDesc.MiscFlags = 0;
 		device->CreateBuffer(&buffDesc, nullptr, &m_constantBuffer);
 
-		m_mainShader = renderer.createShader("shaders/generateGBuffer/generateGBuffer.hlsl", "vsmain", "psmain");
+		m_mainShader = resources.createShader("shaders/generateGBuffer/generateGBuffer.hlsl", "vsmain", "psmain");
 
 		D3D11_SAMPLER_DESC sampler;
 		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
@@ -39,7 +39,7 @@ void GenerateGBuffer::setup(Renderer& renderer)
 	}
 }
 
-void GenerateGBuffer::release(Renderer& renderer)
+void GenerateGBuffer::release(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	context->VSSetShader(nullptr, nullptr, 0);
@@ -69,8 +69,6 @@ void GenerateGBuffer::draw(Renderer& renderer)
 	gbuffer.bindForWriting(renderer);
 	gbuffer.clear(renderer);
 
-
-	
 	context->VSSetShader(m_mainShader.getVertexShader(), nullptr, 0);
 	context->PSSetShader(m_mainShader.getPixelShader(), nullptr, 0);
 	context->IASetInputLayout(m_mainShader.getInputLayout());

@@ -13,8 +13,8 @@ public:
 	SkyBox() {}
 private:
 	~SkyBox();
-	virtual void setup(Renderer& renderer) override;
-	virtual void release(Renderer& renderer) override;
+	virtual void setup(Renderer& renderer, Resources& resources) override;
+	virtual void release(Renderer& renderer, Resources& resources) override;
 	virtual void draw(Renderer& renderer) override;
 
 private:
@@ -24,4 +24,5 @@ private:
 	Shader m_mainShader;
 	ID3D11DepthStencilState* m_depthState;
 	Texture m_nightCubeMap;
+	Texture* m_dayCubeMap;
 };

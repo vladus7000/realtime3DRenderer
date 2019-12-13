@@ -1,10 +1,11 @@
 #include "GBuffer.hpp"
 #include "Renderer.hpp"
 #include "Window.hpp"
+#include "Resources.hpp"
 
-void GBuffer::initialize(Renderer& renderer)
+GBuffer::GBuffer(Renderer& renderer, Resources& resources)
 {
-	auto device = renderer.getDevice();
+	auto device = resources.getDevice();
 	int width = renderer.getWindow().getWidth();
 	int height = renderer.getWindow().getHeight();
 
@@ -39,7 +40,7 @@ void GBuffer::initialize(Renderer& renderer)
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
 		device->CreateTexture2D(&desc, nullptr, &m_diffuseTexture);
-		device->CreateShaderResourceView (m_diffuseTexture, nullptr, &m_diffuseSRV);
+		device->CreateShaderResourceView(m_diffuseTexture, nullptr, &m_diffuseSRV);
 		device->CreateRenderTargetView(m_diffuseTexture, nullptr, &m_diffuseRT);
 	}
 
@@ -80,7 +81,7 @@ void GBuffer::initialize(Renderer& renderer)
 	}
 }
 
-void GBuffer::release()
+GBuffer::~GBuffer()
 {
 	m_diffuseTexture->Release();
 	m_NormalTexture->Release();

@@ -6,14 +6,13 @@ struct ID3D11RenderTargetView;
 struct ID3D11DepthStencilView;
 
 class Renderer;
+class Resources;
 
 class GBuffer
 {
 public:
-	GBuffer() {}
-
-	void initialize(Renderer& renderer);
-	void release();
+	GBuffer(Renderer& renderer, Resources& resources);
+	~GBuffer();
 
 	void bindForWriting(Renderer& renderer);
 	void clear(Renderer& renderer);

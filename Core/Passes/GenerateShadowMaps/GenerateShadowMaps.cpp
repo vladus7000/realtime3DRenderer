@@ -2,25 +2,24 @@
 #include "Renderer.hpp"
 #include "World.hpp"
 #include "GBuffer.hpp"
+#include "Resources.hpp"
 
 GenerateShadowMaps::~GenerateShadowMaps()
 {
 }
 
-void GenerateShadowMaps::setup(Renderer& renderer)
+void GenerateShadowMaps::setup(Renderer& renderer, Resources& resources)
 {
 	const int depthSize = 2048;
 	if (!m_depthTexture.m_DSV)
 	{
-		m_depthTexture.createDepthStencilTexture(depthSize, depthSize, renderer);
-		renderer.registerTexture(Renderer::TextureResouces::ShadowMap, &m_depthTexture);
+		m_depthTexture = resources.createDepthStencilTexture(depthSize, depthSize);
+		resources.registerTexture(Resources::TextureResouces::ShadowMap, &m_depthTexture);
 	}
 }
 
-void GenerateShadowMaps::release(Renderer& renderer)
+void GenerateShadowMaps::release(Renderer& renderer, Resources& resources)
 {
-	auto context = renderer.getContext();
-
 }
 
 void GenerateShadowMaps::draw(Renderer& renderer)

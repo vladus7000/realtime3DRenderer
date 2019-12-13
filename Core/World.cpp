@@ -1,7 +1,7 @@
 #include "World.hpp"
-#include "Renderer.hpp"
+#include "Resources.hpp"
 
-#include <D3DX11tex.h>
+//#include <D3DX11tex.h>
 #undef min
 #undef max
 
@@ -13,9 +13,14 @@ World::World()
 {
 }
 
-void World::initSun(Renderer& renderer)
+World::~World()
 {
-	auto it = loadObjects("cube.obj", "", renderer);
+	deinitializeBuffers();
+}
+
+void World::initSun(Resources& resources)
+{
+	auto it = loadObjects("cube.obj", "", resources);
 	m_sunObject = &*it;
 	m_sunObject->name = "sunObject_";
 	m_sunColorMorning = { 243.0f / 255.0f, 60.0f / 255.0f, 10.0f / 255.0f };
@@ -32,7 +37,7 @@ void World::initSun(Renderer& renderer)
 	m_sunLight = &m_lights[0];
 }
 
-std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer)
+std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileName, const std::string& materialBaseDir, Resources& resources)
 {
 	std::string warn;
 	std::string errs;
@@ -43,7 +48,7 @@ std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileNam
 
 	int oldSize = m_objects.size();
 
-	initializeBuffers(renderer);
+	initializeBuffers(resources);
 	m_materialBaseDir = "";
 
 	for (int i = 0; i < m_objects.size(); i++)
@@ -58,17 +63,14 @@ std::vector<World::Mesh>::iterator World::loadObjects(const std::string& fileNam
 	return m_objects.begin() + oldSize;
 }
 
-void World::initializeBuffers(Renderer& renderer)
+void World::initializeBuffers(Resources& resources)
 {
-	auto device = renderer.getDevice();
+	auto device = resources.getDevice();
 
 	auto foundIt = m_textures.find("defaultT");
 	if (foundIt == m_textures.end())
 	{
-		ID3D11ShaderResourceView* diffuse = nullptr;
-		D3DX11CreateShaderResourceViewFromFile(device, "default.png", 0, 0, &diffuse, 0);
-
-		m_textures["defaultT"] = diffuse;
+		m_textures["defaultT"] = resources.loadTexture("default.png", false);
 	}
 
 	for (auto& shape : m_shapes)
@@ -182,13 +184,13 @@ void World::initializeBuffers(Renderer& renderer)
 		if (foundIt == m_textures.end())
 		{
 			std::string path = m_materialBaseDir + material.diffuse_texname;
-			D3DX11CreateShaderResourceViewFromFile(device, path.c_str(), 0, 0, &diffuse, 0);
-
-			m_textures[material.diffuse_texname] = diffuse;
+			Texture t = resources.loadTexture(path.c_str());
+			diffuse = t.m_SRV.Get();
+			m_textures[material.diffuse_texname] = t;
 		}
 		else
 		{
-			diffuse = foundIt->second;
+			diffuse = foundIt->second.m_SRV.Get();
 		}
 
 		auto& ob = m_objects.back();
@@ -260,11 +262,7 @@ void World::deinitializeBuffers()
 		if (mesh.tcoords_vb) mesh.tcoords_vb->Release();
 		if (mesh.vert_vb) mesh.vert_vb->Release();
 	}
-
-	for (auto& val : m_textures)
-	{
-		val.second->Release();
-	}
+	m_textures.clear();
 }
 
 void World::addLight(Light l)

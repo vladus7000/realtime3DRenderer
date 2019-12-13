@@ -2,6 +2,7 @@
 #include "Core/Window.hpp"
 #include "Core/World.hpp"
 #include "Core/Renderer.hpp"
+#include "Core/Resources.hpp"
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -78,15 +79,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 {
 	Window mainWindow(800, 600, hInstance, UserFunc);
 	World mainWorld;
-	Renderer mainRenderer(mainWindow, mainWorld);
-	mainRenderer.initialize();
+	Resources resources;
+	Renderer mainRenderer(mainWindow, resources);
+	mainRenderer.setWorld(&mainWorld);
 
 	glm::vec3 minBB = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 	glm::vec3 maxBB = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-	mainWorld.initSun(mainRenderer);
+	mainWorld.initSun(resources);
 
-	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", mainRenderer);
+	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", resources);
 	while (newObjects != mainWorld.getObjects().end())
 	{
 		//newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
@@ -103,11 +105,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		++newObjects;
 	}
 
-	auto groundObject = mainWorld.loadObjects("cube.obj", "", mainRenderer);
+	auto groundObject = mainWorld.loadObjects("cube.obj", "", resources);
 	groundObject->worldMatrix =  glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
 	groundObject->name = "ground";
-
-	//mainWorld.addLight(l);
 
 	std::random_device rd;
 	std::mt19937 e2(rd());
@@ -148,7 +148,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 			}
 			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
 		}
-		
+
 		mainWorld.updateSun(dt);
 		mainWindow.peekMessages();
         bool wPressed = GetAsyncKeyState(0x57) & (1<<16); // w
@@ -181,9 +181,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		mainRenderer.drawFrame(dt);
 		mainRenderer.endFrame();
 	}
-
-	mainWorld.deinitializeBuffers();
-	mainRenderer.deinitialize();
 
 	return 0;
 }

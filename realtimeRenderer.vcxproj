@@ -83,7 +83,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir);C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include;$(ProjectDir)\Core</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -112,7 +112,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir);C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include;$(ProjectDir)\Core</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -130,6 +130,7 @@
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBuffer.cpp" />
     <ClCompile Include="Core\Passes\SkyBox\SkyBox.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
+    <ClCompile Include="Core\Resources.cpp" />
     <ClCompile Include="Core\Shader.cpp" />
     <ClCompile Include="Core\Texture.cpp" />
     <ClCompile Include="Core\Window.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="Core\Passes\LitGBuffer\LitGBuffer.hpp" />
     <ClInclude Include="Core\Passes\SkyBox\SkyBox.hpp" />
     <ClInclude Include="Core\Renderer.hpp" />
+    <ClInclude Include="Core\Resources.hpp" />
     <ClInclude Include="Core\Shader.hpp" />
     <ClInclude Include="Core\Texture.hpp" />
     <ClInclude Include="Core\tiny_obj_loader.h" />

@@ -1,6 +1,7 @@
 #pragma once
 
 class Renderer;
+class Resources;
 
 class Pass
 {
@@ -8,8 +9,8 @@ public:
 	Pass() {}
 	virtual ~Pass() {}
 
-	virtual void setup(Renderer& renderer) = 0;
-	virtual void release(Renderer& renderer) = 0;
+	virtual void setup(Renderer& renderer, Resources& resources) = 0;
+	virtual void release(Renderer& renderer, Resources& resources) = 0;
 	virtual void draw(Renderer& renderer) = 0;
 
 	Pass(const Pass& rhs) = delete;

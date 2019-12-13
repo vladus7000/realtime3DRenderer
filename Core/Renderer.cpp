@@ -1,35 +1,32 @@
 #include "Renderer.hpp"
-#include <fstream>
-#include <streambuf>
-#include <iostream>
 #include "Pass.hpp"
 #include "Window.hpp"
 #include "World.hpp"
 #include "Camera.hpp"
-#include <D3DX11tex.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "Resources.hpp"
 
 #include "Passes/GenerateGBuffer/GenerateGbuffer.hpp"
 #include "Passes/LitGBuffer/LitGBuffer.hpp"
 #include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
 #include "Passes/SkyBox/SkyBox.hpp"
 
-Renderer::Renderer(Window& window,  World& world)
+Renderer::Renderer(Window& window, Resources& resources)
 	: m_window(window)
-	, m_world(world)
+	, m_resources(resources)
+	, m_context(resources.getContext())
+	, m_device(resources.getDevice())
+	, m_gbuffer(*this, resources)
 {
+	initialize();
+}
 
+Renderer::~Renderer()
+{
+	deinitialize();
 }
 
 void Renderer::initialize()
 {
-	D3D_FEATURE_LEVEL level[] = { D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0 };
-	D3D_FEATURE_LEVEL outLevel;
-	unsigned int flags = D3D11_CREATE_DEVICE_DEBUG;
-	D3D11CreateDevice(m_adapter, D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, level, 1, D3D11_SDK_VERSION, &m_device, &outLevel, &m_context);
-
 	//swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	swapChainDesc.BufferCount = 1;
@@ -70,8 +67,6 @@ void Renderer::initialize()
 	m_device->CreateRenderTargetView(buffer, nullptr, &m_backBufferRT);
 	buffer->Release();
 
-	m_gbuffer.initialize(*this);
-
 	m_viewport.Width = m_window.getWidth();
 	m_viewport.Height = m_window.getHeight();
 	m_viewport.MaxDepth = 1.0f;
@@ -94,12 +89,12 @@ void Renderer::initialize()
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
 		m_device->CreateTexture2D(&desc, nullptr, &m_hdrTexture.m_texture);
-		m_device->CreateShaderResourceView(m_hdrTexture.m_texture, nullptr, &m_hdrTexture.m_SRV);
-		m_device->CreateRenderTargetView(m_hdrTexture.m_texture, nullptr, &m_hdrTexture.m_RT);
+		m_device->CreateShaderResourceView(m_hdrTexture.m_texture.Get(), nullptr, m_hdrTexture.m_SRV.GetAddressOf());
+		m_device->CreateRenderTargetView(m_hdrTexture.m_texture.Get(), nullptr, m_hdrTexture.m_RT.GetAddressOf());
 	}
 
     { // depth prepass
-        m_depthPrepassShader = createShader("shaders/generateGBuffer/generateGBuffer.hlsl", "vsmain", "");
+        m_depthPrepassShader = m_resources.createShader("shaders/generateGBuffer/generateGBuffer.hlsl", "vsmain", "");
 
         D3D11_BUFFER_DESC buffDesc;
         buffDesc.ByteWidth = sizeof(float[16]) * 2;
@@ -112,53 +107,13 @@ void Renderer::initialize()
 	///////////////////////
 
 	{// env texture
-		stbi_set_flip_vertically_on_load(true);
-		int width, height, nrComponents;
-		float *data = stbi_loadf("noon_grass_1k.hdr", &width, &height, &nrComponents, 0);
-		if (data)
-		{
-			D3D11_TEXTURE2D_DESC desc;
-			desc.ArraySize = 1;
-			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-			desc.CPUAccessFlags = 0;
-			desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-			desc.Width = width;
-			desc.Height = height;
-			desc.MipLevels = 1;
-			desc.MiscFlags = 0;
-			desc.SampleDesc.Count = 1;
-			desc.SampleDesc.Quality = 0;
-			desc.Usage = D3D11_USAGE_DEFAULT;
-
-			D3D11_SUBRESOURCE_DATA subData;
-			subData.pSysMem = data;
-
-			m_device->CreateTexture2D(&desc, nullptr, &m_envHDR.m_texture);
-			free(data);
-
-			m_device->CreateShaderResourceView(m_hdrTexture.m_texture, nullptr, &m_envHDR.m_SRV);
-
-			registerTexture(TextureResouces::EnvironmentHDR, &m_envHDR);
-		}
+		m_envHDR = m_resources.loadHDRTexture("noon_grass_1k.hdr");
+		m_resources.registerTexture(Resources::TextureResouces::EnvironmentHDR, &m_envHDR);
 	}
 
-	{// cubamapTexture
-		ID3D11Texture2D* texture;
-		ID3D11ShaderResourceView* shaderResView;	
-		D3DX11CreateShaderResourceViewFromFile(m_device, "desert.dds", 0, 0, &m_cubeMap.m_SRV, nullptr);
-		if (m_cubeMap.m_SRV)
-		{
-			registerTexture(TextureResouces::EnvCubeMap, &m_cubeMap);
-		}
-
-		D3D11_SAMPLER_DESC sampler;
-		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
-		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		m_device->CreateSamplerState(&sampler, &m_cubeMap.m_sampler);
+	{// cubemapTexture
+		m_cubeMap = m_resources.loadTexture("desert.dds");
+		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMap, &m_cubeMap);
 	}
 
 	addMainPass(new GenerateGBuffer{});
@@ -183,39 +138,8 @@ void Renderer::deinitialize()
     m_depthPrepassCB->Release();
 	m_mainPasses.clear();
 	m_postProcesses.clear();
-	m_gbuffer.release();
 	m_backBufferRT->Release();
 	m_swapChain->Release();
-	m_device->Release();
-	m_context->Release();
-}
-
-void Renderer::registerTexture(TextureResouces id, Texture* texture)
-{
-	auto foundIt = m_textureResources.find(id);
-	if (foundIt == m_textureResources.end())
-	{
-		m_textureResources[id] = texture;
-	}
-}
-
-void Renderer::unregisterTexture(TextureResouces id)
-{
-	auto foundIt = m_textureResources.find(id);
-	if (foundIt != m_textureResources.end())
-	{
-		m_textureResources.erase(foundIt);
-	}
-}
-
-Texture* Renderer::getTextureResource(TextureResouces id)
-{
-	auto foundIt = m_textureResources.find(id);
-	if (foundIt != m_textureResources.end())
-	{
-		return foundIt->second;
-	}
-	return nullptr;
 }
 
 void Renderer::beginFrame()
@@ -232,15 +156,15 @@ void Renderer::drawFrame(float dt)
 {
 	for (auto pass : m_mainPasses)
 	{
-		pass->setup(*this);
+		pass->setup(*this, m_resources);
 		pass->draw(*this);
-		pass->release(*this);
+		pass->release(*this, m_resources);
 	}
 	for (auto post : m_postProcesses)
 	{
-		post->setup(*this);
+		post->setup(*this, m_resources);
 		post->draw(*this);
-		post->release(*this);
+		post->release(*this, m_resources);
 	}
 
 	m_swapChain->Present(1, 0);
@@ -254,10 +178,10 @@ void Renderer::endFrame()
 
 void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y, float w, float h)
 {
-    m_context->ClearDepthStencilView(tex.m_DSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_context->ClearDepthStencilView(tex.m_DSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     ID3D11RenderTargetView* rtvs[] = { nullptr };
-    m_context->OMSetRenderTargets(1, rtvs, tex.m_DSV);
+    m_context->OMSetRenderTargets(1, rtvs, tex.m_DSV.Get());
 
     m_context->VSSetShader(m_depthPrepassShader.getVertexShader(), nullptr, 0);
     m_context->PSSetShader(nullptr, nullptr, 0);
@@ -273,7 +197,7 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y
 	m_viewport.TopLeftX = x;
 	m_viewport.TopLeftY = y;
 	m_context->RSSetViewports(1, &m_viewport);
-    for (auto& mesh : m_world.getObjects())
+    for (auto& mesh : m_world->getObjects())
     {
         D3D11_MAPPED_SUBRESOURCE res;
         m_context->Map(m_depthPrepassCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
@@ -302,75 +226,6 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y
 	m_viewport.TopLeftX = 0.0f;
 	m_viewport.TopLeftY = 0.0f;
 	m_context->RSSetViewports(1, &m_viewport);
-}
-
-Shader Renderer::createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout)
-{
-	std::ifstream t(fileName);
-	std::string str((std::istreambuf_iterator<char>(t)),
-		std::istreambuf_iterator<char>());
-
-	if (str.empty())
-	{
-		return {};
-	}
-
-	ID3D11VertexShader* vertexShader = nullptr;
-	ID3D11PixelShader* pixelShader = nullptr;
-	ID3D11InputLayout* inputLayout = nullptr;
-
-	ID3D10Blob* blob = nullptr;
-	ID3D10Blob* blobErr = nullptr;
-
-	if (!vsName.empty())
-	{
-		D3DCompile(str.c_str(), str.length(), nullptr, nullptr, nullptr, vsName.c_str(), "vs_5_0", 0, 0, &blob, &blobErr);
-		if (blobErr)
-		{
-			std::string err = (char*)blobErr->GetBufferPointer();
-			OutputDebugStringA(err.c_str());
-			blobErr->Release();
-			blobErr = nullptr;
-		}
-
-		m_device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &vertexShader);
-
-		D3D11_INPUT_ELEMENT_DESC desr[] = {
-			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TEXCOORDS", 0, DXGI_FORMAT_R32G32_FLOAT, 2, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
-		};
-
-		m_device->CreateInputLayout(layout.empty() ? desr : layout.data(), layout.empty() ? 3 : layout.size(), blob->GetBufferPointer(), blob->GetBufferSize(), &inputLayout);
-
-		blob->Release();
-		blob = nullptr;
-	}
-	
-	if (!psName.empty())
-	{
-		D3DCompile(str.c_str(), str.length(), nullptr, nullptr, nullptr, psName.c_str(), "ps_5_0", 0, 0, &blob, &blobErr);
-		if (blobErr)
-		{
-			std::string err = (char*)blobErr->GetBufferPointer();
-			OutputDebugStringA(err.c_str());
-			blobErr->Release();
-		}
-
-		m_device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &pixelShader);
-
-		blob->Release();
-		blob = nullptr;
-	}
-
-	t.close();
-
-	Shader ret(inputLayout, vertexShader, pixelShader);
-	if (inputLayout) inputLayout->Release();
-	if (vertexShader) vertexShader->Release();
-	if (pixelShader) pixelShader->Release();
-
-	return ret;
 }
 
 void Renderer::addMainPass(Pass* p)

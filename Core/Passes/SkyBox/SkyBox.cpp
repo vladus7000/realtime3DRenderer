@@ -3,7 +3,7 @@
 #include "Window.hpp"
 #include "World.hpp"
 #include "GBuffer.hpp"
-#include <D3DX11tex.h>
+#include "Resources.hpp"
 
 SkyBox::~SkyBox()
 {
@@ -12,10 +12,12 @@ SkyBox::~SkyBox()
 	m_depthState->Release();
 }
 
-void SkyBox::setup(Renderer& renderer)
+void SkyBox::setup(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
-	auto device = renderer.getDevice();
+	auto device = resources.getDevice();
+	m_dayCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMap);
+
 	if (!m_skyBox)
 	{
 		struct Vertex
@@ -93,16 +95,13 @@ void SkyBox::setup(Renderer& renderer)
 
 		device->CreateDepthStencilState(&dsDesc, &m_depthState);
 
-		m_mainShader = renderer.createShader("shaders/skyBox/skyBox.hlsl", "vsmain", "psmain");
+		m_mainShader = resources.createShader("shaders/skyBox/skyBox.hlsl", "vsmain", "psmain");
 
-		ID3D11Texture2D* texture;
-		ID3D11ShaderResourceView* shaderResView;
-		D3DX11CreateShaderResourceViewFromFile(device, "moondust.dds", 0, 0, &m_nightCubeMap.m_SRV, nullptr);
-
+		m_nightCubeMap = resources.loadTexture("moondust.dds");
 	}
 }
 
-void SkyBox::release(Renderer& renderer)
+void SkyBox::release(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	UINT uStrides = sizeof(float[4]);
@@ -161,16 +160,15 @@ void SkyBox::draw(Renderer& renderer)
 	buffer->sunAngle[3] = 0.0f;
 	context->Unmap(m_constantBuffer, 0);
 
-	Texture* dayCubeMap = renderer.getTextureResource(Renderer::TextureResouces::EnvCubeMap);
 	//Texture* cubeMap = renderer.getWorld().getIsDay() ? dayCubeMap : &m_nightCubeMap;
 
 	ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
 	auto& gbuffer = renderer.getGBuffer();
 	context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-	ID3D11ShaderResourceView* srvs[] = { dayCubeMap->m_SRV, m_nightCubeMap.m_SRV };
+	ID3D11ShaderResourceView* srvs[] = { m_dayCubeMap->m_SRV.Get(), m_nightCubeMap.m_SRV.Get() };
 	context->PSSetShaderResources(0, 2, srvs);
-	ID3D11SamplerState* samplers[] = { dayCubeMap->m_sampler };
+	ID3D11SamplerState* samplers[] = { m_dayCubeMap->m_sampler.Get() };
 	context->PSSetSamplers(0, 1, samplers);
 
 	context->VSSetConstantBuffers(0, 1, &m_constantBuffer);

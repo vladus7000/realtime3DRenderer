@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "Camera.hpp"
-
+#include "Texture.hpp"
 #include <d3d11.h>
 
 #include "tiny_obj_loader.h"
@@ -11,7 +11,7 @@
 #include <map>
 #include <glm/gtx/compatibility.hpp>
 
-class Renderer;
+class Resources;
 
 class World
 {
@@ -34,11 +34,11 @@ public:
 	};
 
 	World();
+	~World();
 
-	void initSun(Renderer& renderer);
+	void initSun(Resources& resources);
 
-	std::vector<Mesh>::iterator loadObjects(const std::string& fileName, const std::string& materialBaseDir, Renderer& renderer);
-	void deinitializeBuffers();
+	std::vector<Mesh>::iterator loadObjects(const std::string& fileName, const std::string& materialBaseDir, Resources& resources);
 
 	World(const World& rhs) = delete;
 	World(World&& rhs) = delete;
@@ -63,8 +63,10 @@ public:
 	void updateSun(float dt);
 
 private:
-	void initializeBuffers(Renderer& renderer);
+	void initializeBuffers(Resources& resources);
+	void deinitializeBuffers();
 
+private:
 	Camera m_camera;
 	tinyobj::attrib_t m_attrib;
 	std::vector<tinyobj::shape_t> m_shapes;
@@ -72,7 +74,7 @@ private:
 	std::vector<Mesh> m_objects;
 	std::vector<Light> m_lights;
 
-	std::map<std::string, ID3D11ShaderResourceView*> m_textures;
+	std::map<std::string, Texture> m_textures;
 	std::string m_materialBaseDir;
 
 	Mesh* m_sunObject;

@@ -13,8 +13,8 @@ public:
 	GenerateShadowMaps() {}
 private:
 	~GenerateShadowMaps();
-	virtual void setup(Renderer& renderer) override;
-	virtual void release(Renderer& renderer) override;
+	virtual void setup(Renderer& renderer, Resources& resources) override;
+	virtual void release(Renderer& renderer, Resources& resources) override;
 	virtual void draw(Renderer& renderer) override;
 
 private:

@@ -3,6 +3,7 @@
 #include "World.hpp"
 #include "GBuffer.hpp"
 #include "Light.hpp"
+#include "Resources.hpp"
 
 LitGBuffer::~LitGBuffer()
 {
@@ -16,12 +17,15 @@ LitGBuffer::~LitGBuffer()
 	m_blendState->Release();
 }
 
-void LitGBuffer::setup(Renderer& renderer)
+void LitGBuffer::setup(Renderer& renderer, Resources& resources)
 {
+	m_shadowMap = resources.getTextureResource(Resources::TextureResouces::ShadowMap);
+	m_cubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMap);
+
 	auto context = renderer.getContext();
 	if (!m_constantBuffer)
 	{
-		auto device = renderer.getDevice();
+		auto device = resources.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
 		buffDesc.ByteWidth = sizeof(float[4]) * 5 + sizeof(float[16]); // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -30,8 +34,9 @@ void LitGBuffer::setup(Renderer& renderer)
 		buffDesc.MiscFlags = 0;
 		device->CreateBuffer(&buffDesc, nullptr, &m_constantBuffer);
 
-		m_mainShader = renderer.createShader("shaders/litGBuffer/litGBuffer.hlsl", "vsmain", "psmain");
-		m_toneShader = renderer.createShader("shaders/litGBuffer/tonemapGBuffer.hlsl", "vsmain", "psmain");
+		m_mainShader = resources.createShader("shaders/litGBuffer/litGBuffer.hlsl", "vsmain", "psmain");
+		m_toneShader = resources.createShader("shaders/litGBuffer/tonemapGBuffer.hlsl", "vsmain", "psmain");
+
 		D3D11_SAMPLER_DESC sampler;
 		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
 		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -86,7 +91,7 @@ void LitGBuffer::setup(Renderer& renderer)
 	}
 }
 
-void LitGBuffer::release(Renderer& renderer)
+void LitGBuffer::release(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 
@@ -109,19 +114,18 @@ void LitGBuffer::draw(Renderer& renderer)
 	auto& world = renderer.getWorld();
 
 	auto& gbuffer = renderer.getGBuffer();
-	Texture* shadowMap = renderer.getTextureResource(Renderer::TextureResouces::ShadowMap);
 
 	{
 
 		auto context = renderer.getContext();
 		float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		context->ClearRenderTargetView(renderer.getHDRTexture().m_RT, color);
+		context->ClearRenderTargetView(renderer.getHDRTexture().m_RT.Get(), color);
 
-		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT };
+		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT.Get() };
 
 		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, shadowMap? shadowMap->m_SRV:nullptr };
-		context->PSSetShaderResources(0, shadowMap ? 4 : 3 , srvs);
+		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap? m_shadowMap->m_SRV.Get() :nullptr };
+		context->PSSetShaderResources(0, m_shadowMap ? 4 : 3 , srvs);
 	}
 	context->PSSetSamplers(0, 1, &m_sampler);
 
@@ -175,11 +179,10 @@ void LitGBuffer::draw(Renderer& renderer)
 	}
 
 	{
-		Texture* cubeMap = renderer.getTextureResource(Renderer::TextureResouces::EnvCubeMap);
 		ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
 		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV, gbuffer.m_diffuseSRV,gbuffer.m_normalSRV, gbuffer.m_positionSRV, cubeMap->m_SRV };
+		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV.Get(), gbuffer.m_diffuseSRV,gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_cubeMap->m_SRV.Get() };
 		context->PSSetShaderResources(0, 5, srvs);
 	}
 

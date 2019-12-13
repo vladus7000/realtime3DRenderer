@@ -300,7 +300,7 @@ void World::updateSun(float dt)
 	m_sunLight->enabled = m_isDay;
 
 	m_sunLight->m_intensity = m_sunColorDay;
-	float Int = 5.0f;
+	float Int = 85.0f;
 
 	if (m_sunAngle >= 0.0f && m_sunAngle < 60.0f)
 	{

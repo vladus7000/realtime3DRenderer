@@ -114,7 +114,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	std::uniform_real_distribution<> distX(minBB.x, maxBB.x);
 	std::uniform_real_distribution<> distY(minBB.y, maxBB.y);
 	std::uniform_real_distribution<> distZ(minBB.z, maxBB.z);
-	std::uniform_real_distribution<> colorRGB(5.0f, 20.0f);
+	std::uniform_real_distribution<> colorRGB(1.0f, 20.0f);
 
 	std::vector<glm::vec3> targetPositions;
 	int lightNumber = 1;
@@ -128,7 +128,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		l.m_type = Light::Type::Point;
 		mainWorld.addLight(l);
 	}
-
 
 	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.1f, 1000.f);
 	g_mainCamera.setView({ 120, 60, 4 }, { 0, 0, 0 });

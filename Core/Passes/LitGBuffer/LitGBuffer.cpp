@@ -104,6 +104,9 @@ void LitGBuffer::release(Renderer& renderer, Resources& resources)
 	context->OMSetBlendState( nullptr, nullptr, 0xffffffff);
 	ID3D11SamplerState* samplers[] = { nullptr };
 	context->PSSetSamplers(0, 1, samplers);
+
+	auto& viewport = renderer.getMainViewport();
+	context->RSSetViewports(1, &viewport);
 }
 
 void LitGBuffer::draw(Renderer& renderer)
@@ -120,9 +123,10 @@ void LitGBuffer::draw(Renderer& renderer)
 		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT.Get() };
 
 		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap? m_shadowMap->m_SRV.Get() :nullptr };
-		context->PSSetShaderResources(0, m_shadowMap ? 4 : 3 , srvs);
+		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+		context->PSSetShaderResources(0, 5 , srvs);
 	}
+	//TODO set sampler for cube map
 	context->PSSetSamplers(0, 1, &m_sampler);
 
 	context->OMSetDepthStencilState(m_depthState, 0);
@@ -134,44 +138,76 @@ void LitGBuffer::draw(Renderer& renderer)
 	context->VSSetShader(m_mainShader.getVertexShader(), nullptr, 0);
 
 	context->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
-
-	for (auto& l : renderer.getWorld().getLights())
+	std::vector<glm::vec4> screenBlocks;
+	float stepX = 800.0 / 10.f;
+	float stepY = 600.0 / 10.f;
+	for (int i = 0; i < 10; i++)
 	{
-		if (!l.enabled)
+		for (int j = 0; j < 10; j++)
 		{
-			continue;
+			screenBlocks.push_back(glm::vec4(i*stepX, j*stepY, i*stepX + stepX, j*stepY + stepY));
 		}
-		D3D11_MAPPED_SUBRESOURCE res;
-		context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-		struct Data
+	}
+	D3D11_VIEWPORT m_viewport;
+	m_viewport.TopLeftX = 0.0f;
+	m_viewport.TopLeftY = 0.0f;
+	//context->RSSetViewports(1, &m_viewport);
+	m_viewport.MinDepth = 0;
+	m_viewport.MaxDepth = 1;
+
+	for (auto& sBlock : screenBlocks)
+	{
+		m_viewport.Width = 80.0f;
+		m_viewport.Height = 60.0f;
+		m_viewport.TopLeftX = sBlock.x;
+		m_viewport.TopLeftY = sBlock.y;
+		context->RSSetViewports(1, &m_viewport);
+
+		for (auto& l : renderer.getWorld().getLights())
 		{
-			float ambient[4];
-			float pos_type[4];
-			float dir[4];
-			float intensity[4];
-			float sunViewProjection[16];
-			float camPos[4];
-		};
-		Data* buffer = reinterpret_cast<Data*>(res.pData);
+			if (!l.enabled)
+			{
+				continue;
+			}
+			float radius = glm::dot(glm::vec3(0.2126f, 0.7152f, 0.0722f), l.m_intensity);
+			float lightX = l.m_position.x;
+			float lightY = l.m_position.y;
 
-		//memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
-		memcpy(buffer->pos_type, &l.m_position[0], sizeof(float[3]));
-		buffer->pos_type[3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
+			D3D11_MAPPED_SUBRESOURCE res;
+			context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+			struct Data
+			{
+				float pos_type[4];
+				float dir[4];
+				float intensity[4];
+				float sunViewProjection[16];
+				float blockPos[4];
+			};
+			Data* buffer = reinterpret_cast<Data*>(res.pData);
 
-		memcpy(buffer->dir, &l.m_direction[0], sizeof(float[3]));
-		memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
+			//memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
+			memcpy(buffer->pos_type, &l.m_position[0], sizeof(float[3]));
+			buffer->pos_type[3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
 
-		glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
+			memcpy(buffer->dir, &l.m_direction[0], sizeof(float[3]));
+			memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
 
-		memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
-		memcpy(buffer->camPos, &renderer.getWorld().getCamera().getPosition()[0], sizeof(float[3]));
-		context->Unmap(m_constantBuffer, 0);
+			glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
 
-		ID3D11Buffer* constants[] = { m_constantBuffer };
-		context->PSSetConstantBuffers(0, 1, constants);
-		context->VSSetConstantBuffers(0, 1, constants);
+			memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
+			buffer->blockPos[0] = sBlock.x / 800.0f;
+			buffer->blockPos[1] = sBlock.y / 600.0f;
+			buffer->blockPos[2] = stepX / 800.0f;
+			buffer->blockPos[3] = stepY / 600.0f;
+			context->Unmap(m_constantBuffer, 0);
 
-		context->Draw(4, 0);
+			ID3D11Buffer* constants[] = { m_constantBuffer };
+			context->PSSetConstantBuffers(0, 1, constants);
+			context->VSSetConstantBuffers(0, 1, constants);
+
+			context->Draw(4, 0);
+		}
+		//break;
 	}
 }
 

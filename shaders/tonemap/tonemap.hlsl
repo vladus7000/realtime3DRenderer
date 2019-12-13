@@ -1,19 +1,5 @@
-cbuffer globals
-{
-	float3 ambientLight;
-	float4 lightPosition_type;
-	float3 lightDirection;
-	float3 lightIntensity;
-	float4x4 sunViewProjection;
-	float3 camPos;
-}
-
 Texture2D hdrMap : register(t0);
 SamplerState samplerState : register(s0);
-//Texture2D diffuseMap : register(t1);
-//Texture2D normalMap : register(t2);
-//Texture2D posMap : register(t3);
-//TextureCube	g_EnvironmentTexture : register(t4);
 
 struct vsInput
 {
@@ -37,12 +23,17 @@ psInput vsmain(vsInput input)
 	return output;
 }
 
-float3 toneMap(float3 hdrColor)
+float3 toneMap(float3 color)
 {
 	//https://www.shadertoy.com/view/lslGzl
-	float exposure = 1.1f;
-	hdrColor *= exposure / (1.0f + hdrColor / exposure);
-	return hdrColor;
+	//float exposure = 1.1f;
+	//hdrColor *= exposure / (1.0f + hdrColor / exposure);
+	//return hdrColor;
+
+	float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+	float toneMappedLuma = luma / (1. + luma);
+	color *= toneMappedLuma / luma;
+	return color;
 }
 
 float4 psmain(psInput input) : SV_Target

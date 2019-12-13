@@ -9,6 +9,7 @@
 #include "Passes/LitGBuffer/LitGBuffer.hpp"
 #include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
 #include "Passes/SkyBox/SkyBox.hpp"
+#include "Passes/Tonemap/Tonemap.hpp"
 
 Renderer::Renderer(Window& window, Resources& resources)
 	: m_window(window)
@@ -111,14 +112,17 @@ void Renderer::initialize()
 		m_resources.registerTexture(Resources::TextureResouces::EnvironmentHDR, &m_envHDR);
 	}
 
-	{// cubemapTexture
-		m_cubeMap = m_resources.loadTexture("desert.dds");
-		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMap, &m_cubeMap);
+	{
+		m_cubeMapDay = m_resources.loadTexture("desert.dds");
+		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapDay, &m_cubeMapDay);
+		m_cubeMapNight = m_resources.loadTexture("moondust.dds");
+		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapNight, &m_cubeMapNight);
 	}
 
 	addMainPass(new GenerateGBuffer{});
 	addMainPass(new GenerateShadowMaps{});
 	addMainPass(new LitGBuffer{});
+	addMainPass(new Tonemap{});
 	// PostProcesses
 	addPostPass(new SkyBox{});
 }

@@ -16,7 +16,8 @@ public:
 	{
 		ShadowMap,
 		EnvironmentHDR,
-		EnvCubeMap
+		EnvCubeMapDay,
+		EnvCubeMapNight
 	};
 
 	Resources();

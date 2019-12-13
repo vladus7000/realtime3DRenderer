@@ -16,7 +16,8 @@ void SkyBox::setup(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	auto device = resources.getDevice();
-	m_dayCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMap);
+	m_dayCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMapDay);
+	m_nightCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMapNight);
 
 	if (!m_skyBox)
 	{
@@ -96,8 +97,6 @@ void SkyBox::setup(Renderer& renderer, Resources& resources)
 		device->CreateDepthStencilState(&dsDesc, &m_depthState);
 
 		m_mainShader = resources.createShader("shaders/skyBox/skyBox.hlsl", "vsmain", "psmain");
-
-		m_nightCubeMap = resources.loadTexture("moondust.dds");
 	}
 }
 
@@ -160,13 +159,11 @@ void SkyBox::draw(Renderer& renderer)
 	buffer->sunAngle[3] = 0.0f;
 	context->Unmap(m_constantBuffer, 0);
 
-	//Texture* cubeMap = renderer.getWorld().getIsDay() ? dayCubeMap : &m_nightCubeMap;
-
 	ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
 	auto& gbuffer = renderer.getGBuffer();
 	context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-	ID3D11ShaderResourceView* srvs[] = { m_dayCubeMap->m_SRV.Get(), m_nightCubeMap.m_SRV.Get() };
+	ID3D11ShaderResourceView* srvs[] = { m_dayCubeMap->m_SRV.Get(), m_nightCubeMap->m_SRV.Get() };
 	context->PSSetShaderResources(0, 2, srvs);
 	ID3D11SamplerState* samplers[] = { m_dayCubeMap->m_sampler.Get() };
 	context->PSSetSamplers(0, 1, samplers);

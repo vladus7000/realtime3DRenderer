@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Core\Passes\SkyBox">
       <UniqueIdentifier>{cc810548-61cd-4373-a635-e65ee17b31e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Passes\Tonemap">
+      <UniqueIdentifier>{157ab17d-3781-4233-a5d5-0704780fd4c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -71,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="Core\Resources.cpp">
       <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\Tonemap\Tonemap.cpp">
+      <Filter>Source Files\Core\Passes\Tonemap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -136,6 +142,9 @@
     </ClInclude>
     <ClInclude Include="Core\Resources.hpp">
       <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\Tonemap\Tonemap.hpp">
+      <Filter>Source Files\Core\Passes\Tonemap</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

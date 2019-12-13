@@ -129,6 +129,7 @@
     <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp" />
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBuffer.cpp" />
     <ClCompile Include="Core\Passes\SkyBox\SkyBox.cpp" />
+    <ClCompile Include="Core\Passes\Tonemap\Tonemap.cpp" />
     <ClCompile Include="Core\Renderer.cpp" />
     <ClCompile Include="Core\Resources.cpp" />
     <ClCompile Include="Core\Shader.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.hpp" />
     <ClInclude Include="Core\Passes\LitGBuffer\LitGBuffer.hpp" />
     <ClInclude Include="Core\Passes\SkyBox\SkyBox.hpp" />
+    <ClInclude Include="Core\Passes\Tonemap\Tonemap.hpp" />
     <ClInclude Include="Core\Renderer.hpp" />
     <ClInclude Include="Core\Resources.hpp" />
     <ClInclude Include="Core\Shader.hpp" />

@@ -23,6 +23,6 @@ private:
 	ID3D11SamplerState* m_sampler = nullptr;
 	Shader m_mainShader;
 	ID3D11DepthStencilState* m_depthState;
-	Texture m_nightCubeMap;
+	Texture* m_nightCubeMap;
 	Texture* m_dayCubeMap;
 };

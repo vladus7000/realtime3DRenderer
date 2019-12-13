@@ -36,7 +36,7 @@ psInput vsmain(vsInput input)
 
 float3 litPixel(float2 tCoord)
 {
-	//float3 diffuse = diffuseMap.Sample(samplerState, tCoord).xyz;
+	float3 diffuse = diffuseMap.Sample(samplerState, tCoord).xyz;
 	float3 normal = normalMap.Sample(samplerState, tCoord).xyz;
 	float3 position = positionMap.Sample(samplerState, tCoord).xyz;
 	float intencity = 0.0f;
@@ -76,7 +76,7 @@ float3 litPixel(float2 tCoord)
 
 		intencity = att * saturate(dot(normalize(normal), normalize(lightPosition_type.xyz - position)));
 	}
-	float3 color = intencity * /*diffuse*/ lightIntensity;
+	float3 color = intencity * diffuse * lightIntensity;
 	return color;
 }
 

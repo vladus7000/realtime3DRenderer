@@ -9,11 +9,11 @@ cbuffer globals
 }
 
 Texture2D hdrMap : register(t0);
-Texture2D diffuseMap : register(t1);
-Texture2D normalMap : register(t2);
-Texture2D posMap : register(t3);
-TextureCube	g_EnvironmentTexture : register(t4);
 SamplerState samplerState : register(s0);
+//Texture2D diffuseMap : register(t1);
+//Texture2D normalMap : register(t2);
+//Texture2D posMap : register(t3);
+//TextureCube	g_EnvironmentTexture : register(t4);
 
 struct vsInput
 {
@@ -45,26 +45,13 @@ float3 toneMap(float3 hdrColor)
 	return hdrColor;
 }
 
-float3 finalColor(float3 light, float2 tcoord)
-{
-	float3 diffuseColor = diffuseMap.Sample(samplerState, tcoord).xyz;
-	float3 normal = normalMap.Sample(samplerState, tcoord).xyz;
-	float3 posPixel = posMap.Sample(samplerState, tcoord).xyz;
-	//float3 refl = reflect(normalize(camPos.xyz - posPixel), normal);
-	float3 fromeCubeMap = g_EnvironmentTexture.Sample(samplerState, normal).xyz;
-	float intensity = dot(float3(0.2126f, 0.7152f, 0.0722f), light); //float3(0.2126f, 0.7152f, 0.0722f)
-
-	return lerp(fromeCubeMap * diffuseColor, diffuseColor * light, saturate(intensity));
-}
-
 float4 psmain(psInput input) : SV_Target
 {
 	float2 tcoord = input.tcoord*0.5f + 0.5f;
 	tcoord.y = 1.0f - tcoord.y;
 	
 	float3 hdrColor = hdrMap.Sample(samplerState, tcoord).xyz;
-	float3 colored = finalColor(hdrColor, tcoord);
-	float3 ldrColor = toneMap(colored);
+	float3 ldrColor = toneMap(hdrColor);
 
 	float3 gammaCorrectedColor = pow(ldrColor, 1.0f / 2.2f);
 	return float4(gammaCorrectedColor, 0.0f);

@@ -70,7 +70,8 @@ private:
     ID3D11Buffer* m_depthPrepassCB = nullptr;
 	GBuffer m_gbuffer;
 	Texture m_envHDR;
-	Texture m_cubeMap;
+	Texture m_cubeMapDay;
+	Texture m_cubeMapNight;
 	D3D11_VIEWPORT m_viewport;
 
 	std::vector<Pass*> m_mainPasses;

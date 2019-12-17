@@ -30,9 +30,23 @@ float3 toneMap(float3 color)
 	//hdrColor *= exposure / (1.0f + hdrColor / exposure);
 	//return hdrColor;
 
-	float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
-	float toneMappedLuma = luma / (1. + luma);
-	color *= toneMappedLuma / luma;
+	//float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+	//float toneMappedLuma = luma / (1. + luma);
+	//color *= toneMappedLuma / luma;
+
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	float exposure = 1.1;
+	color *= exposure;
+	color = ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
+	color /= white;
+
 	return color;
 }
 

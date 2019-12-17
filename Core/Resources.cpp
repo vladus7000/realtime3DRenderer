@@ -224,3 +224,33 @@ Shader Resources::createShader(const std::string& fileName, const std::string& v
 
 	return ret;
 }
+
+Shader Resources::createComputeShader(const std::string& fileName, const std::string& csName)
+{
+	ID3D11ComputeShader* shader = nullptr;
+	if (!csName.empty())
+	{
+		ID3D10Blob* blob = nullptr;
+		ID3D10Blob* blobErr = nullptr;
+		D3DX11CompileFromFile(fileName.c_str(), NULL, NULL, csName.c_str(), "cs_5_0",0 , 0, NULL, &blob, &blobErr, NULL);
+		if (blobErr)
+		{
+			std::string err = (char*)blobErr->GetBufferPointer();
+			OutputDebugStringA(err.c_str());
+			blobErr->Release();
+			blobErr = nullptr;
+		}
+
+		if (blob)
+		{
+			m_device->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
+
+			blob->Release();
+			blob = nullptr;
+		}
+	}
+
+	Shader res(shader);
+	if (shader) shader->Release();
+	return res;
+}

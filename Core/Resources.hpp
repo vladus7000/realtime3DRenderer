@@ -32,6 +32,7 @@ public:
 	ID3D11DeviceContext* getContext() { return m_context; }
 
 	Shader createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout = {});
+	Shader createComputeShader(const std::string& fileName, const std::string& csName);
 
 	void registerTexture(TextureResouces id, Texture* texture);
 	void unregisterTexture(TextureResouces id);

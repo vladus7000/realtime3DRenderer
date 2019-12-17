@@ -56,8 +56,11 @@ void GenerateGBuffer::release(Renderer& renderer, Resources& resources)
 	ID3D11SamplerState* samplers[] = { nullptr };
 	context->PSSetSamplers(0, 1, samplers);
 
-	ID3D11ShaderResourceView* srvs[] = { nullptr };
-	context->PSSetShaderResources(0, 1, srvs);
+	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr,nullptr,nullptr };
+	context->PSSetShaderResources(0, 4, srvs);
+
+	ID3D11RenderTargetView* rtvs[] = { nullptr , nullptr , nullptr };;
+	context->OMSetRenderTargets(3, rtvs, nullptr);
 }
 
 void GenerateGBuffer::draw(Renderer& renderer)
@@ -100,8 +103,8 @@ void GenerateGBuffer::draw(Renderer& renderer)
 		memcpy(buffer->model, &(mesh.worldMatrix[0][0]), sizeof(float[16]));
 		context->Unmap(m_constantBuffer, 0);
 
-		ID3D11ShaderResourceView* srvs[] = { mesh.albedo};
-		context->PSSetShaderResources(0, 1, srvs);
+		ID3D11ShaderResourceView* srvs[] = { mesh.albedo, mesh.normal, mesh.metalness, mesh.rough};
+		context->PSSetShaderResources(0, 4, srvs);
 
 		unsigned int stride[] = { sizeof(float[3]), sizeof(float[3]) , sizeof(float[2]) };
 		unsigned int offsets[] = { 0, 0, 0 };

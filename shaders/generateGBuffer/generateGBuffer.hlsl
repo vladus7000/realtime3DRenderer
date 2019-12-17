@@ -5,6 +5,10 @@ cbuffer globals
 }
 
 Texture2D diffuseMap : register(t0);
+Texture2D normalMap : register(t1);
+Texture2D metalMap : register(t2);
+Texture2D roughMap : register(t3);
+
 SamplerState samplerState : register(s0);
 
 struct vsInput
@@ -20,13 +24,6 @@ struct psInput
 	float3 normal : NORMAL;
 	float2 tcoord : TEXCOORD;
 	float3 worldPosition : POSITION;
-};
-static matrix Identity =
-{
-	{ 1, 0, 0, 0 },
-	{ 0, 1, 0, 0 },
-	{ 0, 0, 1, 0 },
-	{ 0, 0, 0, 1 }
 };
 
 psInput vsmain(vsInput input)
@@ -51,12 +48,18 @@ ps_output psmain(psInput input)
 {
 	ps_output output;
 
-	output.diffuse = pow(diffuseMap.Sample(samplerState, input.tcoord), 2.2f);
+	output.diffuse = pow(diffuseMap.Sample(samplerState, input.tcoord), 2.2); // ^2.2 ?
+	float3 textureNormap = normalize(normalMap.Sample(samplerState, input.tcoord).rgb * 2.0 - 1.0);
+	float3 interpolatedNormal = normalize(input.normal);
+	float rough = roughMap.Sample(samplerState, input.tcoord).r;
+	float metal = metalMap.Sample(samplerState, input.tcoord).r;
+
+	output.normal = float4(input.normal, metal);
+
 	if (output.diffuse.a < 1.0)
 	{
 		discard;
 	}
-	output.position = float4(input.worldPosition.xyz, 1.0f);
-	output.normal = float4(input.normal, 1.0f);
+	output.position = float4(input.worldPosition.xyz, rough);
 	return output;
 }

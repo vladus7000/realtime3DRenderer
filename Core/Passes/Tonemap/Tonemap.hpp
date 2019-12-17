@@ -7,6 +7,7 @@
 struct ID3D11Buffer;
 struct ID3D11SamplerState;
 struct ID3D11DepthStencilState;
+
 class Tonemap : public Pass
 {
 public:

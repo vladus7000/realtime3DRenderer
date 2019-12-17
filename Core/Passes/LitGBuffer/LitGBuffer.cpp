@@ -5,11 +5,13 @@
 #include "Light.hpp"
 #include "Resources.hpp"
 
+#include <algorithm>
+
 LitGBuffer::~LitGBuffer()
 {
-	if (m_constantBuffer)
+	if (m_lightsCB)
 	{
-		m_constantBuffer->Release();
+		m_lightsCB->Release();
 	}
 
 	m_sampler->Release();
@@ -20,27 +22,27 @@ LitGBuffer::~LitGBuffer()
 void LitGBuffer::setup(Renderer& renderer, Resources& resources)
 {
 	m_shadowMap = resources.getTextureResource(Resources::TextureResouces::ShadowMap);
-	m_cubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMapDay);
+	m_cubeMap = resources.getTextureResource(Resources::TextureResouces::EnvironmentHDR);
 
-	if (!m_constantBuffer)
+	if (!m_lightsCB)
 	{
 		auto device = resources.getDevice();
 		D3D11_BUFFER_DESC buffDesc;
-		buffDesc.ByteWidth = sizeof(float[4]) * 5 + sizeof(float[16]); // must be multiply of 16
+		buffDesc.ByteWidth = sizeof(float[4]) * 3 * m_lightMaxNumber + sizeof(float[4]) * 2 + sizeof(float[16]); // must be multiply of 16
 		buffDesc.Usage = D3D11_USAGE_DYNAMIC;
 		buffDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		buffDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		buffDesc.MiscFlags = 0;
-		device->CreateBuffer(&buffDesc, nullptr, &m_constantBuffer);
+		device->CreateBuffer(&buffDesc, nullptr, &m_lightsCB);
 
 		m_mainShader = resources.createShader("shaders/litGBuffer/litGBuffer.hlsl", "vsmain", "psmain");
-
+		m_csShader = resources.createComputeShader("shaders/litGBuffer/litGbuffer_c.hlsl", "csMain");
 		D3D11_SAMPLER_DESC sampler;
 		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
 		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
 		sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
 		sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 		device->CreateSamplerState(&sampler, &m_sampler);
 
@@ -107,6 +109,12 @@ void LitGBuffer::release(Renderer& renderer, Resources& resources)
 
 	auto& viewport = renderer.getMainViewport();
 	context->RSSetViewports(1, &viewport);
+
+	context->CSSetShader(nullptr, nullptr, 0);
+	context->CSSetShaderResources(0, 5, srvs);
+	ID3D11UnorderedAccessView* uavs[] = { nullptr };
+	context->CSSetUnorderedAccessViews(0, 1, uavs, nullptr);
+
 }
 
 void LitGBuffer::draw(Renderer& renderer)
@@ -118,26 +126,38 @@ void LitGBuffer::draw(Renderer& renderer)
 
 	{
 		float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		context->ClearRenderTargetView(renderer.getHDRTexture().m_RT.Get(), color);
-
-		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT.Get() };
-
-		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
-		context->PSSetShaderResources(0, 5 , srvs);
+		//context->ClearRenderTargetView(renderer.getHDRTexture().m_RT.Get(), color);
+		//
+		//ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT.Get() };
+		//
+		//context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
+		//ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+		//context->PSSetShaderResources(0, 5 , srvs);
 	}
 	//TODO set sampler for cube map
-	context->PSSetSamplers(0, 1, &m_sampler);
+	context->CSSetSamplers(0, 1, &m_sampler);
 
 	context->OMSetDepthStencilState(m_depthState, 0);
 
 	context->RSSetViewports(1, &renderer.getMainViewport());
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	context->IASetInputLayout(nullptr);
-	context->PSSetShader(m_mainShader.getPixelShader(), nullptr, 0);
-	context->VSSetShader(m_mainShader.getVertexShader(), nullptr, 0);
+	//context->PSSetShader(m_mainShader.getPixelShader(), nullptr, 0);
+	//context->VSSetShader(m_mainShader.getVertexShader(), nullptr, 0);
 
 	context->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
+
+	//ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr, nullptr, nullptr,nullptr };
+	//context->PSSetShaderResources(0, 5, srvs);
+	context->CSSetShader(m_csShader.getComputeShader(), nullptr, 0);
+
+	ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+	//context->PSSetShaderResources(0, 5 , srvs);
+	context->CSSetShaderResources(0, 5, srvs);
+	ID3D11UnorderedAccessView* uavs[] = { renderer.getHDRTexture().m_UAV.Get() };
+	context->CSSetUnorderedAccessViews(0, 1, uavs, nullptr);
+	//context->Dispatch(800/20, 600/20, 1);
+	//return;
 	std::vector<glm::vec4> screenBlocks;
 	float stepX = 800.0 / 10.f;
 	float stepY = 600.0 / 10.f;
@@ -155,16 +175,31 @@ void LitGBuffer::draw(Renderer& renderer)
 	m_viewport.MinDepth = 0;
 	m_viewport.MaxDepth = 1;
 
-	for (auto& sBlock : screenBlocks)
+	//for (auto& sBlock : screenBlocks)
 	{
 		m_viewport.Width = 80.0f;
 		m_viewport.Height = 60.0f;
-		m_viewport.TopLeftX = sBlock.x;
-		m_viewport.TopLeftY = sBlock.y;
-		context->RSSetViewports(1, &m_viewport);
+		//m_viewport.TopLeftX = sBlock.x;
+		//m_viewport.TopLeftY = sBlock.y;
+	//	context->RSSetViewports(1, &m_viewport);
 
-		for (auto& l : renderer.getWorld().getLights())
+		D3D11_MAPPED_SUBRESOURCE res;
+		context->Map(m_lightsCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+		struct Data
 		{
+			float pos_type[4 * m_lightMaxNumber];
+			float dir[4 * m_lightMaxNumber];
+			float intensity[4 * m_lightMaxNumber];
+			float sunViewProjection[16];
+			float viewPosition[4];
+			float numLights[4];
+		};
+		Data* buffer = reinterpret_cast<Data*>(res.pData);
+		int lightIndex = 0;
+		auto& lights = renderer.getWorld().getLights();
+		for (int i = 0; i < std::min((int)lights.size(), m_lightMaxNumber); i++)
+		{
+			auto& l = lights[i];
 			if (!l.enabled)
 			{
 				continue;
@@ -173,40 +208,34 @@ void LitGBuffer::draw(Renderer& renderer)
 			float lightX = l.m_position.x;
 			float lightY = l.m_position.y;
 
-			D3D11_MAPPED_SUBRESOURCE res;
-			context->Map(m_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-			struct Data
+			memcpy(&buffer->pos_type[lightIndex*4], &l.m_position[0], sizeof(float[3]));
+			buffer->pos_type[lightIndex * 4 + 3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
+
+			memcpy(&buffer->dir[lightIndex * 4], &l.m_direction[0], sizeof(float[3]));
+			
+			memcpy(&buffer->intensity[lightIndex * 4], &l.m_intensity[0], sizeof(float[3]));
+			buffer->intensity[lightIndex * 4 + 3] = l.m_radius;
+
+			if (l.m_type == Light::Type::Directional)
 			{
-				float pos_type[4];
-				float dir[4];
-				float intensity[4];
-				float sunViewProjection[16];
-				float blockPos[4];
-			};
-			Data* buffer = reinterpret_cast<Data*>(res.pData);
-
-			//memcpy(buffer->ambient, &ambient[0], sizeof(float[3]));
-			memcpy(buffer->pos_type, &l.m_position[0], sizeof(float[3]));
-			buffer->pos_type[3] = l.m_type == Light::Type::Directional ? 0.0f : 1.0f;
-
-			memcpy(buffer->dir, &l.m_direction[0], sizeof(float[3]));
-			memcpy(buffer->intensity, &l.m_intensity[0], sizeof(float[3]));
-
-			glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
-
-			memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
-			buffer->blockPos[0] = sBlock.x / 800.0f;
-			buffer->blockPos[1] = sBlock.y / 600.0f;
-			buffer->blockPos[2] = stepX / 800.0f;
-			buffer->blockPos[3] = stepY / 600.0f;
-			context->Unmap(m_constantBuffer, 0);
-
-			ID3D11Buffer* constants[] = { m_constantBuffer };
-			context->PSSetConstantBuffers(0, 1, constants);
-			context->VSSetConstantBuffers(0, 1, constants);
-
-			context->Draw(4, 0);
+				glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
+				memcpy(buffer->sunViewProjection, &mvp[0][0], sizeof(float[16]));
+			}
+			//context->PSSetConstantBuffers(0, 1, constants);
+			//context->VSSetConstantBuffers(0, 1, constants);
+			//
+			//context->Draw(4, 0);
+			lightIndex++;
 		}
+
+		memcpy(buffer->viewPosition, &world.getCamera().getPosition()[0], sizeof(float[3]));
+
+		lightIndex = std::max(lightIndex, m_lightMaxNumber);
+		buffer->numLights[0] = lightIndex;
+		context->Unmap(m_lightsCB, 0);
+		ID3D11Buffer* constants[] = { m_lightsCB };
+		context->CSSetConstantBuffers(0, 1, constants);
+		context->Dispatch(800 / 20, 600 / 20, 1);
 		//break;
 	}
 }

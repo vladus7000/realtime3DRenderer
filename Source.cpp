@@ -104,20 +104,32 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 		++newObjects;
 	}
+	minBB -= 50.0f;
+	maxBB += 50.0f;
 
 	auto groundObject = mainWorld.loadObjects("cube.obj", "", resources);
-	groundObject->worldMatrix =  glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
+	groundObject->worldMatrix = glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
 	groundObject->name = "ground";
+
+	auto pistol = mainWorld.loadObjects("pistol/pistol.obj", "pistol/", resources);
+
+	auto t = pistol;
+	while (t != mainWorld.getObjects().end())
+	{
+		t->worldMatrix = glm::translate(glm::vec3{ 0.0f, 5.0f, -40.0f }) * glm::scale(glm::vec3{ 15.0f, 15.0f, 15.0f });
+		++t;
+	}
 
 	std::random_device rd;
 	std::mt19937 e2(rd());
 	std::uniform_real_distribution<> distX(minBB.x, maxBB.x);
 	std::uniform_real_distribution<> distY(minBB.y, maxBB.y);
 	std::uniform_real_distribution<> distZ(minBB.z, maxBB.z);
-	std::uniform_real_distribution<> colorRGB(1.0f, 20.0f);
+	std::uniform_real_distribution<> colorRGB(15.0f, 30.0f);
+	std::uniform_real_distribution<> radiuses(0.1f, 15.0f);
 
 	std::vector<glm::vec3> targetPositions;
-	int lightNumber = 1;
+	int lightNumber = 50;
 	Light l;
 	for (int i = 0; i < lightNumber; i++)
 	{
@@ -126,6 +138,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		l.m_intensity = { colorRGB(e2), colorRGB(e2), colorRGB(e2) };
 		//float in = glm::dot({ 0.2126f, 0.7152f, 0.0722f }, l.m_intensity);
 		l.m_type = Light::Type::Point;
+		l.m_radius = radiuses(e2);
 		mainWorld.addLight(l);
 	}
 
@@ -134,9 +147,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 	const float dt = 1.0f / 60.0f;
     const float speed = dt * 50.0f;
-
+	float angle = 0.0f;
 	while (!mainWindow.shouldClose())
 	{
+		angle += dt*10.0f;
 		float delta = 9.0f * dt;
 		auto& lights = mainWorld.getLights();
 		for (int i = 0; i < lightNumber; i++)
@@ -146,6 +160,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 				targetPositions[i] = { distX(e2), distY(e2), distZ(e2) };
 			}
 			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
+		}
+
+		auto t = pistol;
+		while (t != mainWorld.getObjects().end())
+		{
+			t->worldMatrix = glm::translate(glm::vec3{ 0.0f, 5.0f, -40.0f }) *glm::rotate (glm::radians(angle), glm::vec3{ 0.0f, 1.0f, 0.0f }) * glm::scale(glm::vec3{ 15.0f, 15.0f, 15.0f });
+			++t;
 		}
 
 		mainWorld.updateSun(dt);

@@ -18,12 +18,14 @@ private:
 	virtual void draw(Renderer& renderer) override;
 
 private:
-	ID3D11Buffer* m_constantBuffer = nullptr;
+	ID3D11Buffer* m_lightsCB = nullptr;
 	ID3D11SamplerState* m_sampler = nullptr;
 	ID3D11DepthStencilState* m_depthState;
 	ID3D11BlendState* m_blendState = nullptr;
 	Shader m_mainShader;
+	Shader m_csShader;
 //	Shader m_toneShader;
 	Texture* m_shadowMap;
 	Texture* m_cubeMap;
+	static const int m_lightMaxNumber = 50;
 };

@@ -9,3 +9,8 @@ Shader::Shader(Microsoft::WRL::ComPtr <ID3D11InputLayout> layout
 {
 }
 
+Shader::Shader(Microsoft::WRL::ComPtr<ID3D11ComputeShader> cs)
+	: m_computeShader(cs)
+{
+}
+

@@ -71,6 +71,9 @@ void World::initializeBuffers(Resources& resources)
 	if (foundIt == m_textures.end())
 	{
 		m_textures["defaultT"] = resources.loadTexture("default.png", false);
+		m_textures["defaultN"] = resources.loadTexture("defaultN.png", false);
+		m_textures["defaultR"] = resources.loadTexture("defaultR.png", false);
+		m_textures["defaultM"] = resources.loadTexture("defaultM.png", false);
 	}
 
 	for (auto& shape : m_shapes)
@@ -177,27 +180,76 @@ void World::initializeBuffers(Resources& resources)
 		}
 		m_objects.push_back({});
 
-		auto& material = m_materials[mesh.material_ids[0]];
-		material.diffuse_texname;
-		auto foundIt = m_textures.find(material.diffuse_texname.empty() ? "defaultT": material.diffuse_texname);
-		ID3D11ShaderResourceView* diffuse = nullptr;
-		if (foundIt == m_textures.end())
+		ID3D11ShaderResourceView* diffuse = m_textures["defaultT"].m_SRV.Get();
+		ID3D11ShaderResourceView* normal = m_textures["defaultN"].m_SRV.Get();
+		ID3D11ShaderResourceView* rough = m_textures["defaultR"].m_SRV.Get();
+		ID3D11ShaderResourceView* metal = m_textures["defaultM"].m_SRV.Get();
+		if (mesh.material_ids[0] >= 0)
 		{
-			std::string path = m_materialBaseDir + material.diffuse_texname;
-			Texture t = resources.loadTexture(path.c_str());
-			diffuse = t.m_SRV.Get();
-			m_textures[material.diffuse_texname] = t;
-		}
-		else
-		{
-			diffuse = foundIt->second.m_SRV.Get();
-		}
+			auto& material = m_materials[mesh.material_ids[0]];
+			
+			//albedo
+			auto foundIt = m_textures.find(material.diffuse_texname.empty() ? "defaultT" : material.diffuse_texname);
+			if (foundIt == m_textures.end())
+			{
+				std::string path = m_materialBaseDir + material.diffuse_texname;
+				Texture t = resources.loadTexture(path.c_str());
+				diffuse = t.m_SRV.Get();
+				m_textures[material.diffuse_texname] = t;
+			}
+			else
+			{
+				diffuse = foundIt->second.m_SRV.Get();
+			}
+			//normal
+			foundIt = m_textures.find(material.normal_texname .empty() ? "defaultN" : material.normal_texname);
+			if (foundIt == m_textures.end())
+			{
+				std::string path = m_materialBaseDir + material.normal_texname;
+				Texture t = resources.loadTexture(path.c_str());
+				normal = t.m_SRV.Get();
+				m_textures[material.normal_texname] = t;
+			}
+			else
+			{
+				normal = foundIt->second.m_SRV.Get();
+			}
+			//metal
+			foundIt = m_textures.find(material.metallic_texname .empty() ? "defaultM" : material.metallic_texname);
+			if (foundIt == m_textures.end())
+			{
+				std::string path = m_materialBaseDir + material.metallic_texname;
+				Texture t = resources.loadTexture(path.c_str());
+				metal = t.m_SRV.Get();
+				m_textures[material.metallic_texname] = t;
+			}
+			else
+			{
+				metal = foundIt->second.m_SRV.Get();
+			}
+			//rough
+			foundIt = m_textures.find(material.roughness_texname .empty() ? "defaultR" : material.roughness_texname);
+			if (foundIt == m_textures.end())
+			{
+				std::string path = m_materialBaseDir + material.roughness_texname;
+				Texture t = resources.loadTexture(path.c_str());
+				rough = t.m_SRV.Get();
+				m_textures[material.roughness_texname] = t;
+			}
+			else
+			{
+				rough = foundIt->second.m_SRV.Get();
+			}
 
+		}
 		auto& ob = m_objects.back();
 		ob.maxCoord = maxPoint;
 		ob.minCoord = minPoint;
 		ob.name = shape.name;
 		ob.albedo = diffuse;
+		ob.rough = rough;
+		ob.metalness = metal;
+		ob.normal = normal;
 		ob.numIndices = mesh.indices.size();//indices.size();
 		/*D3D11_BUFFER_DESC buffDesc;
 		buffDesc.ByteWidth = sizeof(unsigned int) * indices.size();
@@ -300,19 +352,18 @@ void World::updateSun(float dt)
 	m_sunLight->enabled = m_isDay;
 
 	m_sunLight->m_intensity = m_sunColorDay;
-	float Int = 85.0f;
+	float Int = 35.0f;
 
 	if (m_sunAngle >= 0.0f && m_sunAngle < 60.0f)
 	{
 		m_sunLight->m_intensity = glm::lerp(m_sunColorMorning, m_sunColorDay, m_sunAngle / 60.0f);
-		Int = glm::lerp(2.0f, 5.0f, m_sunAngle / 60.0f);
+		Int = glm::lerp(2.0f, 35.0f, m_sunAngle / 60.0f);
 	}
 	if (m_sunAngle >= 120.0f && m_sunAngle < 180.0)
 	{
 		m_sunLight->m_intensity = glm::lerp(m_sunColorDay, m_sunColorMorning, (m_sunAngle - 120.0f) / 60.0f);
-		Int = glm::lerp(5.0f, 2.0f, (m_sunAngle - 120.0f) / 60.0f);
+		Int = glm::lerp(35.0f, 2.0f, (m_sunAngle - 120.0f) / 60.0f);
 	}
 
 	m_sunLight->m_intensity *= Int;
-
 }

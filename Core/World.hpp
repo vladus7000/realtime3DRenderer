@@ -26,6 +26,8 @@ public:
 		//Separate to material
 		ID3D11ShaderResourceView* albedo = nullptr;
 		ID3D11ShaderResourceView* normal = nullptr;
+		ID3D11ShaderResourceView* metalness = nullptr;
+		ID3D11ShaderResourceView* rough = nullptr;
 		int numIndices = 0;
 		std::string name;
 		glm::mat4 worldMatrix = glm::mat4(1.0f);

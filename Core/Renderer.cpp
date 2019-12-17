@@ -79,7 +79,7 @@ void Renderer::initialize()
 	{
 		D3D11_TEXTURE2D_DESC desc;
 		desc.ArraySize = 1;
-		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 		desc.CPUAccessFlags = 0;
 		desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		desc.Width = m_window.getWidth();
@@ -92,6 +92,7 @@ void Renderer::initialize()
 		m_device->CreateTexture2D(&desc, nullptr, &m_hdrTexture.m_texture);
 		m_device->CreateShaderResourceView(m_hdrTexture.m_texture.Get(), nullptr, m_hdrTexture.m_SRV.GetAddressOf());
 		m_device->CreateRenderTargetView(m_hdrTexture.m_texture.Get(), nullptr, m_hdrTexture.m_RT.GetAddressOf());
+		m_device->CreateUnorderedAccessView(m_hdrTexture.m_texture.Get(), nullptr, m_hdrTexture.m_UAV.GetAddressOf());
 	}
 
     { // depth prepass
@@ -108,14 +109,14 @@ void Renderer::initialize()
 	///////////////////////
 
 	{// env texture
-		m_envHDR = m_resources.loadHDRTexture("noon_grass_1k.hdr");
+		m_envHDR = m_resources.loadTexture("stpeters_cross.dds");
 		m_resources.registerTexture(Resources::TextureResouces::EnvironmentHDR, &m_envHDR);
 	}
 
 	{
-		m_cubeMapDay = m_resources.loadTexture("desert.dds");
+		m_cubeMapDay = m_resources.loadTexture("stpeters_cross.dds");//desert
 		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapDay, &m_cubeMapDay);
-		m_cubeMapNight = m_resources.loadTexture("moondust.dds");
+		m_cubeMapNight = m_resources.loadTexture("stpeters_cross.dds");//moondust
 		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapNight, &m_cubeMapNight);
 	}
 
@@ -230,6 +231,20 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y
 	m_viewport.TopLeftX = 0.0f;
 	m_viewport.TopLeftY = 0.0f;
 	m_context->RSSetViewports(1, &m_viewport);
+
+	ID3D11Buffer* buffers[] = { nullptr };
+	m_context->IASetVertexBuffers(0, 0, buffers, nullptr, nullptr);
+	m_context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED);
+
+	{
+		ID3D11Buffer* constants[] = { nullptr };
+		m_context->VSSetConstantBuffers(0, 1, constants);
+	}
+	m_context->VSSetShader(nullptr, nullptr, 0);
+	m_context->PSSetShader(nullptr, nullptr, 0);
+	m_context->IASetInputLayout(nullptr);
+	
+	m_context->OMSetRenderTargets(1, rtvs, nullptr);
 }
 
 void Renderer::addMainPass(Pass* p)

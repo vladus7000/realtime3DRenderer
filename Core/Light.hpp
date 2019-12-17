@@ -33,6 +33,7 @@ public:
 	glm::vec3 m_direction;
 	glm::vec3 m_attenuation;
 	glm::vec3 m_intensity;
+	float m_radius = 0.0f;
 	Type m_type = Type::Directional;
 	float m_cutoff;
 	bool perspective = true;

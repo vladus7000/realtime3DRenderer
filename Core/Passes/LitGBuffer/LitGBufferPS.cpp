@@ -14,9 +14,9 @@ LitGBufferPS::~LitGBufferPS()
 		m_lightsCB->Release();
 	}
 
-	m_sampler->Release();
-	m_depthState->Release();
-	m_blendState->Release();
+	if (m_sampler) m_sampler->Release();
+	if (m_depthState) m_depthState->Release();
+	if (m_blendState) m_blendState->Release();
 }
 
 void LitGBufferPS::setup(Renderer& renderer, Resources& resources)
@@ -110,7 +110,7 @@ void LitGBufferPS::release(Renderer& renderer, Resources& resources)
 	context->RSSetViewports(1, &viewport);
 }
 
-void LitGBufferPS::draw(Renderer& renderer)
+void LitGBufferPS::execute(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	auto& world = renderer.getWorld();
@@ -123,8 +123,8 @@ void LitGBufferPS::draw(Renderer& renderer)
 		
 		ID3D11RenderTargetView* rtvs[] = { renderer.getHDRTexture().m_RT.Get() };
 		
-		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
-		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depth.m_DSV.Get());
+		ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuse.m_SRV.Get(), gbuffer.m_normal_metalnes.m_SRV.Get(), gbuffer.m_position_rough.m_SRV.Get(), m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
 		context->PSSetShaderResources(0, 5 , srvs);
 	}
 	//TODO set sampler for cube map
@@ -140,8 +140,8 @@ void LitGBufferPS::draw(Renderer& renderer)
 
 	context->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
 
-	ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
-	context->PSSetShaderResources(0, 5 , srvs);
+	//ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+	//context->PSSetShaderResources(0, 5 , srvs);
 	
 	std::vector<glm::vec4> screenBlocks;
 	float stepX = 800.0 / 10.f;

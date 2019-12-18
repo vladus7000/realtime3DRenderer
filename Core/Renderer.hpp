@@ -35,8 +35,8 @@ public:
 	ID3D11DeviceContext* getContext() { return m_context; }
 
 	ID3D11RenderTargetView* getDisplayBB() { return m_backBufferRT; }
-	ID3D11Texture2D* getDisplayDepthStencil() { return m_gbuffer.m_depthStencilTexture; }
-	ID3D11DepthStencilView* getDisplayDepthStencilView() { return m_gbuffer.m_depthStencilView; }
+	ID3D11Texture2D* getDisplayDepthStencil() { return m_gbuffer.m_depth.m_texture.Get(); }
+	ID3D11DepthStencilView* getDisplayDepthStencilView() { return m_gbuffer.m_depth.m_DSV.Get(); }
 
 	D3D11_VIEWPORT& getMainViewport() { return m_viewport; }
 
@@ -72,13 +72,24 @@ private:
 	Texture m_cubeMapDay;
 	Texture m_cubeMapNight;
 	D3D11_VIEWPORT m_viewport;
-
-	std::unique_ptr<Pass> m_geometryPass;
-	std::unique_ptr<Pass> m_shadowMapPass;
-	std::unique_ptr<Pass> m_litGbufferCS;
-	std::unique_ptr<Pass> m_litGbufferPS;
-	std::unique_ptr<Pass> m_tonemapPass;
-	std::unique_ptr<Pass> m_skyBoxPass;
+	//TODO:
+	//reflectionCapture, planarReflections, dynamicEnvMap, (mainZPass), (mainGBuffer), mainGBufferSimple, mainGBufferDecals, decalVolumes, mainGBufferFixup,
+	//msaaZDown, msaaClassify, lensFlaresOcclusionQueries, (lightPassBegin), (cascadedShadowMaps), (spotlightShadowMaps), downsampleZ, linearizeZ, (ssao),ssaoFilter, (ssr),
+	//halfRezZPass, halfResTransparent, mainDistort, lightPassEnd, mainOpaque, linearizeZ, mainOpaqueEmmisive, mainTransDecal, fgOpaqueEmissive, subsurfaceScattering,
+	//(skyAndFog), hairCoverage, mainTransDepth,linearizeZ, mainTransparent, halfResUpsample, motionBloorDerive, motionBloorVelocity, motionBoolFilter, filmicEffectsEdge,
+	//spriteDof, fgTransparent, lensScope, filmicEffects, (bloom), (luminanceAvg), (finalPost), overlay, fxaa, smaa, resample, screenEffect
+	std::unique_ptr<Pass> m_mainZpass;
+	std::unique_ptr<Pass> m_mainGBuffer;
+	std::unique_ptr<Pass> m_cascadedShadowMaps;
+	std::unique_ptr<Pass> m_spotlightShadowMaps;
+	std::unique_ptr<Pass> m_lightPassBeginCS;
+	std::unique_ptr<Pass> m_lightPassBeginPS;
+	std::unique_ptr<Pass> m_bloom;
+	std::unique_ptr<Pass> m_luminanceAvg;
+	std::unique_ptr<Pass> m_skyAndFog;
+	std::unique_ptr<Pass> m_finalPost;
+	std::unique_ptr<Pass> m_ssao;
+	std::unique_ptr<Pass> m_ssr;
 
 	std::vector<Pass*> m_framePasses;
 	int m_framesRendered = 0;

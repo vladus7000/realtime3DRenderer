@@ -1,17 +1,17 @@
-#include "Tonemap.hpp"
+#include "LuminanceAvg.hpp"
 #include "Renderer.hpp"
 #include "Window.hpp"
 #include "World.hpp"
 #include "GBuffer.hpp"
 #include "Resources.hpp"
 
-Tonemap::~Tonemap()
+LuminanceAvg::~LuminanceAvg()
 {
 	m_sampler->Release();
 	m_depthState->Release();
 }
 
-void Tonemap::setup(Renderer& renderer, Resources& resources)
+void LuminanceAvg::setup(Renderer& renderer, Resources& resources)
 {
 	if (!m_mainShader.getPixelShader())
 	{
@@ -56,21 +56,21 @@ void Tonemap::setup(Renderer& renderer, Resources& resources)
 	}
 }
 
-void Tonemap::release(Renderer& renderer, Resources& resources)
+void LuminanceAvg::release(Renderer& renderer, Resources& resources)
 {
 	ID3D11SamplerState* samplers[] = { nullptr };
 	renderer.getContext()->PSSetSamplers(0, 1, samplers);
 	renderer.getContext()->OMSetDepthStencilState(nullptr, 0);
 }
 
-void Tonemap::draw(Renderer& renderer)
+void LuminanceAvg::execute(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	auto& gbuffer = renderer.getGBuffer();
 	{
 		ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
-		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
+		context->OMSetRenderTargets(1, rtvs, gbuffer.m_depth.m_DSV.Get());
 		ID3D11ShaderResourceView* srvs[] = { renderer.getHDRTexture().m_SRV.Get() };
 		context->PSSetShaderResources(0, 1, srvs);
 	}

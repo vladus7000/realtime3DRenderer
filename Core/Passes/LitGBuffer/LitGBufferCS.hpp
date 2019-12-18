@@ -14,7 +14,7 @@ private:
 	~LitGBufferCS();
 	virtual void setup(Renderer& renderer, Resources& resources) override;
 	virtual void release(Renderer& renderer, Resources& resources) override;
-	virtual void draw(Renderer& renderer) override;
+	virtual void execute(Renderer& renderer) override;
 
 private:
 	ID3D11Buffer* m_lightsCB = nullptr;

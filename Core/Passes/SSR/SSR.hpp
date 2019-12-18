@@ -4,19 +4,16 @@
 #include "Shader.hpp"
 #include "Texture.hpp"
 
-struct ID3D11Buffer;
-struct ID3D11SamplerState;
-
-class GenerateShadowMaps : public Pass
+class SSR : public Pass
 {
 public:
-	GenerateShadowMaps() {}
+	SSR() {}
 private:
-	~GenerateShadowMaps();
+	~SSR();
 	virtual void setup(Renderer& renderer, Resources& resources) override;
 	virtual void release(Renderer& renderer, Resources& resources) override;
 	virtual void execute(Renderer& renderer) override;
 
 private:
-	Texture m_depthTexture;
+	Shader m_mainShader;
 };

@@ -22,7 +22,7 @@ void GenerateShadowMaps::release(Renderer& renderer, Resources& resources)
 {
 }
 
-void GenerateShadowMaps::draw(Renderer& renderer)
+void GenerateShadowMaps::execute(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	auto& world = renderer.getWorld();

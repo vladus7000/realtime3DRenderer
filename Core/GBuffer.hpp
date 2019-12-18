@@ -1,9 +1,10 @@
 #pragma once
 
-struct ID3D11Texture2D;
-struct ID3D11ShaderResourceView;
-struct ID3D11RenderTargetView;
-struct ID3D11DepthStencilView;
+#include "Texture.hpp"
+//struct ID3D11Texture2D;
+//struct ID3D11ShaderResourceView;
+//struct ID3D11RenderTargetView;
+//struct ID3D11DepthStencilView;
 
 class Renderer;
 class Resources;
@@ -15,20 +16,11 @@ public:
 	~GBuffer();
 
 	void bindForWriting(Renderer& renderer);
-	void clear(Renderer& renderer);
+	void clearColor(Renderer& renderer);
+	void clearDepth(Renderer& renderer);
 
-	ID3D11Texture2D* m_diffuseTexture = nullptr;
-	ID3D11Texture2D* m_NormalTexture = nullptr;
-	ID3D11Texture2D* m_PositionTexture = nullptr;
-	ID3D11Texture2D* m_depthStencilTexture = nullptr;
-
-	ID3D11ShaderResourceView* m_diffuseSRV = nullptr;
-	ID3D11ShaderResourceView* m_positionSRV = nullptr;
-	ID3D11ShaderResourceView* m_normalSRV = nullptr;
-
-	ID3D11RenderTargetView* m_diffuseRT = nullptr;
-	ID3D11RenderTargetView* m_positionRT = nullptr;
-	ID3D11RenderTargetView* m_normalRT = nullptr;
-
-	ID3D11DepthStencilView* m_depthStencilView = nullptr;
+	Texture m_diffuse;
+	Texture m_normal_metalnes;
+	Texture m_position_rough;
+	Texture m_depth;
 };

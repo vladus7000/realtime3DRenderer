@@ -37,6 +37,24 @@
     <Filter Include="Source Files\Core\Settings">
       <UniqueIdentifier>{44578ddc-dd29-48b6-b989-432ce42f1787}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Passes\Bloom">
+      <UniqueIdentifier>{6162ee3f-79ae-4942-8728-3fdd1faa6677}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Passes\FinalPost">
+      <UniqueIdentifier>{515097ca-f14f-4967-a105-3352a2a1b300}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Passes\MainZpass">
+      <UniqueIdentifier>{3589f9e5-9321-4e38-aa04-2bb78a5e0025}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Passes\SpotlightSM">
+      <UniqueIdentifier>{40be281c-4d62-4e9d-a126-6c25aef983e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Passes\SSAO">
+      <UniqueIdentifier>{2a098900-4a46-4be5-85bf-dd5e26c1dd3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Passes\SSR">
+      <UniqueIdentifier>{bb0735ea-a2e3-4f09-9017-4e258ae205fc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -69,20 +87,38 @@
     <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp">
       <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Passes\SkyBox\SkyBox.cpp">
-      <Filter>Source Files\Core\Passes\SkyBox</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Resources.cpp">
       <Filter>Source Files\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Passes\Tonemap\Tonemap.cpp">
-      <Filter>Source Files\Core\Passes\Tonemap</Filter>
     </ClCompile>
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBufferPS.cpp">
       <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
     </ClCompile>
     <ClCompile Include="Core\Passes\LitGBuffer\LitGBufferCS.cpp">
       <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\SkyBox\SkyAndFog.cpp">
+      <Filter>Source Files\Core\Passes\SkyBox</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\Bloom\Bloom.cpp">
+      <Filter>Source Files\Core\Passes\Bloom</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\FinalPost\FinalPost.cpp">
+      <Filter>Source Files\Core\Passes\FinalPost</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\MainZpass\MainZpass.cpp">
+      <Filter>Source Files\Core\Passes\MainZpass</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\SpotlightSM\SpotlightSM.cpp">
+      <Filter>Source Files\Core\Passes\SpotlightSM</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\Tonemap\LuminanceAvg.cpp">
+      <Filter>Source Files\Core\Passes\Tonemap</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\SSR\SSR.cpp">
+      <Filter>Source Files\Core\Passes\SSR</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\SSAO\SSAO.cpp">
+      <Filter>Source Files\Core\Passes\SSAO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -140,14 +176,8 @@
     <ClInclude Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.hpp">
       <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Passes\SkyBox\SkyBox.hpp">
-      <Filter>Source Files\Core\Passes\SkyBox</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Resources.hpp">
       <Filter>Source Files\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Passes\Tonemap\Tonemap.hpp">
-      <Filter>Source Files\Core\Passes\Tonemap</Filter>
     </ClInclude>
     <ClInclude Include="Core\Settings.hpp">
       <Filter>Source Files\Core</Filter>
@@ -163,6 +193,30 @@
     </ClInclude>
     <ClInclude Include="Core\Passes\LitGBuffer\LitGBufferCS.hpp">
       <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\SkyBox\SkyAndFog.hpp">
+      <Filter>Source Files\Core\Passes\SkyBox</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\Bloom\Bloom.hpp">
+      <Filter>Source Files\Core\Passes\Bloom</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\FinalPost\FinalPost.hpp">
+      <Filter>Source Files\Core\Passes\FinalPost</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\MainZpass\MainZpass.hpp">
+      <Filter>Source Files\Core\Passes\MainZpass</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\SpotlightSM\SpotlightSM.hpp">
+      <Filter>Source Files\Core\Passes\SpotlightSM</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\Tonemap\LuminanceAvg.hpp">
+      <Filter>Source Files\Core\Passes\Tonemap</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\SSR\SSR.hpp">
+      <Filter>Source Files\Core\Passes\SSR</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\SSAO\SSAO.hpp">
+      <Filter>Source Files\Core\Passes\SSAO</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

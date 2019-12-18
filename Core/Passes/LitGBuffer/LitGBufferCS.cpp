@@ -58,7 +58,7 @@ void LitGBufferCS::release(Renderer& renderer, Resources& resources)
 
 }
 
-void LitGBufferCS::draw(Renderer& renderer)
+void LitGBufferCS::execute(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	auto& world = renderer.getWorld();
@@ -69,7 +69,7 @@ void LitGBufferCS::draw(Renderer& renderer)
 
 	context->CSSetShader(m_csShader.getComputeShader(), nullptr, 0);
 
-	ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuseSRV, gbuffer.m_normalSRV, gbuffer.m_positionSRV, m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
+	ID3D11ShaderResourceView* srvs[] = { gbuffer.m_diffuse.m_SRV.Get(), gbuffer.m_normal_metalnes.m_SRV.Get(), gbuffer.m_position_rough.m_SRV.Get(), m_shadowMap->m_SRV.Get(), m_cubeMap->m_SRV.Get() };
 	context->CSSetShaderResources(0, 5, srvs);
 	ID3D11UnorderedAccessView* uavs[] = { renderer.getHDRTexture().m_UAV.Get() };
 	context->CSSetUnorderedAccessViews(0, 1, uavs, nullptr);

@@ -1,18 +1,18 @@
-#include "SkyBox.hpp"
+#include "SkyAndFog.hpp"
 #include "Renderer.hpp"
 #include "Window.hpp"
 #include "World.hpp"
 #include "GBuffer.hpp"
 #include "Resources.hpp"
 
-SkyBox::~SkyBox()
+SkyAndFog::~SkyAndFog()
 {
 	m_skyBox->Release();
 	m_constantBuffer->Release();
 	m_depthState->Release();
 }
 
-void SkyBox::setup(Renderer& renderer, Resources& resources)
+void SkyAndFog::setup(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	auto device = resources.getDevice();
@@ -100,7 +100,7 @@ void SkyBox::setup(Renderer& renderer, Resources& resources)
 	}
 }
 
-void SkyBox::release(Renderer& renderer, Resources& resources)
+void SkyAndFog::release(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	UINT uStrides = sizeof(float[4]);
@@ -126,7 +126,7 @@ void SkyBox::release(Renderer& renderer, Resources& resources)
 	context->IASetInputLayout(nullptr);
 }
 
-void SkyBox::draw(Renderer& renderer)
+void SkyAndFog::execute(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	UINT uStrides = sizeof(float[4]);
@@ -162,7 +162,7 @@ void SkyBox::draw(Renderer& renderer)
 	ID3D11RenderTargetView* rtvs[] = { renderer.getDisplayBB() };
 
 	auto& gbuffer = renderer.getGBuffer();
-	context->OMSetRenderTargets(1, rtvs, gbuffer.m_depthStencilView);
+	context->OMSetRenderTargets(1, rtvs, gbuffer.m_depth.m_DSV.Get());
 	ID3D11ShaderResourceView* srvs[] = { m_dayCubeMap->m_SRV.Get(), m_nightCubeMap->m_SRV.Get() };
 	context->PSSetShaderResources(0, 2, srvs);
 	ID3D11SamplerState* samplers[] = { m_dayCubeMap->m_sampler.Get() };

@@ -22,8 +22,10 @@ GBuffer::GBuffer(Renderer& renderer, Resources& resources)
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
-		device->CreateTexture2D(&desc, nullptr, &m_depthStencilTexture);
-		device->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilView);
+		device->CreateTexture2D(&desc, nullptr, m_depth.m_texture.GetAddressOf());
+		device->CreateDepthStencilView(m_depth.m_texture.Get(), nullptr, m_depth.m_DSV.GetAddressOf());
+		m_depth.m_w = width;
+		m_depth.m_h = height;
 	}
 
 	{//diffuse
@@ -39,9 +41,11 @@ GBuffer::GBuffer(Renderer& renderer, Resources& resources)
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
-		device->CreateTexture2D(&desc, nullptr, &m_diffuseTexture);
-		device->CreateShaderResourceView(m_diffuseTexture, nullptr, &m_diffuseSRV);
-		device->CreateRenderTargetView(m_diffuseTexture, nullptr, &m_diffuseRT);
+		device->CreateTexture2D(&desc, nullptr, m_diffuse.m_texture.GetAddressOf());
+		device->CreateShaderResourceView(m_diffuse.m_texture.Get(), nullptr, m_diffuse.m_SRV.GetAddressOf());
+		device->CreateRenderTargetView(m_diffuse.m_texture.Get(), nullptr, m_diffuse.m_RT.GetAddressOf());
+		m_diffuse.m_w = width;
+		m_diffuse.m_h = height;
 	}
 
 	{//positions
@@ -57,9 +61,11 @@ GBuffer::GBuffer(Renderer& renderer, Resources& resources)
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
-		device->CreateTexture2D(&desc, nullptr, &m_PositionTexture);
-		device->CreateShaderResourceView(m_PositionTexture, nullptr, &m_positionSRV);
-		device->CreateRenderTargetView(m_PositionTexture, nullptr, &m_positionRT);
+		device->CreateTexture2D(&desc, nullptr, m_position_rough.m_texture.GetAddressOf());
+		device->CreateShaderResourceView(m_position_rough.m_texture.Get(), nullptr, m_position_rough.m_SRV.GetAddressOf());
+		device->CreateRenderTargetView(m_position_rough.m_texture.Get(), nullptr, m_position_rough.m_RT.GetAddressOf());
+		m_position_rough.m_w = width;
+		m_position_rough.m_h = height;
 	}
 
 	{//normals
@@ -75,44 +81,37 @@ GBuffer::GBuffer(Renderer& renderer, Resources& resources)
 		desc.SampleDesc.Count = 1;
 		desc.SampleDesc.Quality = 0;
 		desc.Usage = D3D11_USAGE_DEFAULT;
-		device->CreateTexture2D(&desc, nullptr, &m_NormalTexture);
-		device->CreateShaderResourceView(m_NormalTexture, nullptr, &m_normalSRV);
-		device->CreateRenderTargetView(m_NormalTexture, nullptr, &m_normalRT);
+		device->CreateTexture2D(&desc, nullptr, m_normal_metalnes.m_texture.GetAddressOf());
+		device->CreateShaderResourceView(m_normal_metalnes.m_texture.Get(), nullptr, m_normal_metalnes.m_SRV.GetAddressOf());
+		device->CreateRenderTargetView(m_normal_metalnes.m_texture.Get(), nullptr, m_normal_metalnes.m_RT.GetAddressOf());
+		m_normal_metalnes.m_w = width;
+		m_normal_metalnes.m_h = height;
 	}
 }
 
 GBuffer::~GBuffer()
 {
-	m_diffuseTexture->Release();
-	m_NormalTexture->Release();
-	m_PositionTexture->Release();
-	m_depthStencilTexture->Release();
-
-	m_diffuseSRV->Release();
-	m_positionSRV->Release();
-	m_normalSRV->Release();
-
-	m_diffuseRT->Release();
-	m_positionRT->Release();
-	m_normalRT->Release();
-
-	m_depthStencilView->Release();
 }
 
 void GBuffer::bindForWriting(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 
-	ID3D11RenderTargetView* rtvs[] = { m_diffuseRT , m_positionRT , m_normalRT };;
-	context->OMSetRenderTargets(3, rtvs, m_depthStencilView);
+	ID3D11RenderTargetView* rtvs[] = { m_diffuse.m_RT.Get() , m_position_rough.m_RT.Get() , m_normal_metalnes.m_RT.Get() };;
+	context->OMSetRenderTargets(3, rtvs, m_depth.m_DSV.Get());
 }
 
-void GBuffer::clear(Renderer& renderer)
+void GBuffer::clearDepth(Renderer& renderer)
+{
+	auto context = renderer.getContext();
+	context->ClearDepthStencilView(m_depth.m_DSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
+
+void GBuffer::clearColor(Renderer& renderer)
 {
 	auto context = renderer.getContext();
 	float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	context->ClearRenderTargetView(m_diffuseRT, color);
-	context->ClearRenderTargetView(m_positionRT, color);
-	context->ClearRenderTargetView(m_normalRT, color);
-	context->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	context->ClearRenderTargetView(m_diffuse.m_RT.Get(), color);
+	context->ClearRenderTargetView(m_position_rough.m_RT.Get(), color);
+	context->ClearRenderTargetView(m_normal_metalnes.m_RT.Get(), color);
 }

@@ -9,8 +9,14 @@
 #include "Passes/LitGBuffer/LitGBufferCS.hpp"
 #include "Passes/LitGBuffer/LitGBufferPS.hpp"
 #include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
-#include "Passes/SkyBox/SkyBox.hpp"
-#include "Passes/Tonemap/Tonemap.hpp"
+#include "Passes/SkyBox/SkyAndFog.hpp"
+#include "Passes/Tonemap/LuminanceAvg.hpp"
+#include "Passes/Bloom/Bloom.hpp"
+#include "Passes/FinalPost/FinalPost.hpp"
+#include "Passes/MainZpass/MainZpass.hpp"
+#include "Passes/SpotlightSM/SpotlightSM.hpp"
+#include "Passes/SSAO/SSAO.hpp"
+#include "Passes/SSR/SSR.hpp"
 
 #include "SettingsHolder.hpp"
 #include "Settings/RenderSettings.hpp"
@@ -72,8 +78,8 @@ void Renderer::initialize()
 	m_device->CreateRenderTargetView(buffer, nullptr, &m_backBufferRT);
 	buffer->Release();
 
-	m_viewport.Width = m_window.getWidth();
-	m_viewport.Height = m_window.getHeight();
+	m_viewport.Width = (float)m_window.getWidth();
+	m_viewport.Height = (float)m_window.getHeight();
 	m_viewport.MaxDepth = 1.0f;
 	m_viewport.MinDepth = 0.0f;
 	m_viewport.TopLeftX = 0.0f;
@@ -124,14 +130,20 @@ void Renderer::initialize()
 		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapNight, &m_cubeMapNight);
 	}
 
-	m_geometryPass.reset(new GenerateGBuffer{});
-	m_shadowMapPass.reset(new GenerateShadowMaps{});
-	m_litGbufferCS.reset(new LitGBufferCS{});
-	m_litGbufferPS.reset(new LitGBufferPS{});
-	m_tonemapPass.reset(new Tonemap{});
-	m_skyBoxPass.reset(new SkyBox{});
+	m_mainGBuffer.reset(new GenerateGBuffer{});
+	m_cascadedShadowMaps.reset(new GenerateShadowMaps{});
+	m_lightPassBeginCS.reset(new LitGBufferCS{});
+	m_lightPassBeginPS.reset(new LitGBufferPS{});
+	m_luminanceAvg.reset(new LuminanceAvg{});
+	m_skyAndFog.reset(new SkyAndFog{});
+	m_mainZpass.reset(new MainZpass{});
+	m_spotlightShadowMaps.reset(new SpotlightSM{});
+	m_bloom.reset(new Bloom{});
+	m_finalPost.reset(new FinalPost{});
+	m_ssao.reset(new SSAO{});
+	m_ssr.reset(new SSR{});
 
-	m_framePasses.reserve(6);
+	m_framePasses.reserve(12);
 
 	SettingsHolder::getInstance().addSetting(Settings::Type::Render, new RenderSettings{});
 }
@@ -146,30 +158,39 @@ void Renderer::deinitialize()
 
 void Renderer::constructPasses()
 {
-	m_framePasses.push_back(m_geometryPass.get());
-	m_framePasses.push_back(m_shadowMapPass.get());
+	m_framePasses.push_back(m_mainZpass.get());
+	m_framePasses.push_back(m_mainGBuffer.get());
+
+	m_framePasses.push_back(m_cascadedShadowMaps.get());
+	m_framePasses.push_back(m_spotlightShadowMaps.get());
+
+	m_framePasses.push_back(m_ssao.get());
 
 	auto settings = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
 	if (settings->useCSforLighting)
 	{
-		m_framePasses.push_back(m_litGbufferCS.get());
+		m_framePasses.push_back(m_lightPassBeginCS.get());
 	}
 	else
 	{
-		m_framePasses.push_back(m_litGbufferPS.get());
+		m_framePasses.push_back(m_lightPassBeginPS.get());
 	}
 
-	m_framePasses.push_back(m_tonemapPass.get());
-	m_framePasses.push_back(m_skyBoxPass.get());
+	m_framePasses.push_back(m_ssr.get());
+
+	m_framePasses.push_back(m_bloom.get());
+	m_framePasses.push_back(m_luminanceAvg.get());
+	m_framePasses.push_back(m_skyAndFog.get());
+	m_framePasses.push_back(m_finalPost.get());
 }
 
 void Renderer::beginFrame()
 {
 	float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };// 0.3 0.3 0.6
 	m_context->ClearRenderTargetView(m_backBufferRT, color);
-	m_context->ClearDepthStencilView(m_gbuffer.m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	m_context->ClearDepthStencilView(m_gbuffer.m_depth.m_DSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	m_context->OMSetRenderTargets(1, &m_backBufferRT, m_gbuffer.m_depthStencilView);
+	m_context->OMSetRenderTargets(1, &m_backBufferRT, m_gbuffer.m_depth.m_DSV.Get());
 	m_context->RSSetViewports(1, &m_viewport);
 
 	constructPasses();
@@ -180,7 +201,7 @@ void Renderer::drawFrame(float dt)
 	for (auto pass : m_framePasses)
 	{
 		pass->setup(*this, m_resources);
-		pass->draw(*this);
+		pass->execute(*this);
 		pass->release(*this, m_resources);
 	}
 
@@ -239,8 +260,8 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y
         m_context->Draw(mesh.numIndices, 0);
     }
 
-	m_viewport.Width = m_window.getWidth();
-	m_viewport.Height = m_window.getHeight();
+	m_viewport.Width = (float)m_window.getWidth();
+	m_viewport.Height = (float)m_window.getHeight();
 	m_viewport.TopLeftX = 0.0f;
 	m_viewport.TopLeftY = 0.0f;
 	m_context->RSSetViewports(1, &m_viewport);

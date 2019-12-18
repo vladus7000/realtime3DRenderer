@@ -11,7 +11,7 @@ public:
 
 	virtual void setup(Renderer& renderer, Resources& resources) = 0;
 	virtual void release(Renderer& renderer, Resources& resources) = 0;
-	virtual void draw(Renderer& renderer) = 0;
+	virtual void execute(Renderer& renderer) = 0;
 
 	Pass(const Pass& rhs) = delete;
 	Pass(Pass&& rhs) = delete;

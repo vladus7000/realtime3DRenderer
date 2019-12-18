@@ -7,22 +7,20 @@
 struct ID3D11Buffer;
 struct ID3D11SamplerState;
 struct ID3D11DepthStencilState;
-class SkyBox : public Pass
+
+class LuminanceAvg : public Pass
 {
 public:
-	SkyBox() {}
+	LuminanceAvg() {}
 private:
-	~SkyBox();
+	~LuminanceAvg();
 	virtual void setup(Renderer& renderer, Resources& resources) override;
 	virtual void release(Renderer& renderer, Resources& resources) override;
-	virtual void draw(Renderer& renderer) override;
+	virtual void execute(Renderer& renderer) override;
 
 private:
 	ID3D11Buffer* m_constantBuffer = nullptr;
-	ID3D11Buffer* m_skyBox = nullptr;
 	ID3D11SamplerState* m_sampler = nullptr;
+	ID3D11DepthStencilState* m_depthState = nullptr;
 	Shader m_mainShader;
-	ID3D11DepthStencilState* m_depthState;
-	Texture* m_nightCubeMap;
-	Texture* m_dayCubeMap;
 };

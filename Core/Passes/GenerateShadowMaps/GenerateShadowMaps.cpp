@@ -14,7 +14,7 @@ void GenerateShadowMaps::setup(Renderer& renderer, Resources& resources)
 	if (!m_depthTexture.m_DSV)
 	{
 		m_depthTexture = resources.createDepthStencilTexture(depthSize, depthSize);
-		resources.registerTexture(Resources::TextureResouces::ShadowMap, &m_depthTexture);
+		resources.registerTexture(Resources::ResoucesID::ShadowMap, &m_depthTexture);
 	}
 }
 

@@ -12,12 +12,14 @@
 class Resources
 {
 public:
-	enum class TextureResouces
+	enum class ResoucesID
 	{
 		ShadowMap,
 		EnvironmentHDR,
 		EnvCubeMapDay,
-		EnvCubeMapNight
+		EnvCubeMapNight,
+		LitHDRTexture,
+		LitHDRTextureBloom
 	};
 
 	Resources();
@@ -34,9 +36,20 @@ public:
 	Shader createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout = {});
 	Shader createComputeShader(const std::string& fileName, const std::string& csName);
 
-	void registerTexture(TextureResouces id, Texture* texture);
-	void unregisterTexture(TextureResouces id);
-	Texture* getTextureResource(TextureResouces id);
+	void registerTexture(ResoucesID id, Texture* texture);
+	void unregisterTexture(ResoucesID id);
+
+	template<typename T>
+	T* getResource(ResoucesID id)
+	{
+		T* res = nullptr;
+		auto foundIt = m_textureResources.find(id);
+		if (foundIt != m_textureResources.end())
+		{
+			res = static_cast<T*>(foundIt->second);
+		}
+		return res;
+	}
 
 	Texture loadTexture(const std::string& fileName, bool createSampler = true);
 	Texture loadHDRTexture(const std::string& fileName, bool createSampler = true);
@@ -47,5 +60,5 @@ private:
 	ID3D11Device* m_device = nullptr;
 	ID3D11DeviceContext *m_context = nullptr;
 
-	std::map<TextureResouces, Texture*> m_textureResources;
+	std::map<ResoucesID, Texture*> m_textureResources;
 };

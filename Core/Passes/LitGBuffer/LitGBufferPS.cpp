@@ -21,8 +21,8 @@ LitGBufferPS::~LitGBufferPS()
 
 void LitGBufferPS::setup(Renderer& renderer, Resources& resources)
 {
-	m_shadowMap = resources.getTextureResource(Resources::TextureResouces::ShadowMap);
-	m_cubeMap = resources.getTextureResource(Resources::TextureResouces::EnvironmentHDR);
+	m_shadowMap = resources.getResource<Texture>(Resources::ResoucesID::ShadowMap);
+	m_cubeMap = resources.getResource<Texture>(Resources::ResoucesID::EnvironmentHDR);
 
 	if (!m_lightsCB)
 	{

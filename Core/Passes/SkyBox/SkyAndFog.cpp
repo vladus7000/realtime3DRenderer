@@ -16,8 +16,8 @@ void SkyAndFog::setup(Renderer& renderer, Resources& resources)
 {
 	auto context = renderer.getContext();
 	auto device = resources.getDevice();
-	m_dayCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMapDay);
-	m_nightCubeMap = resources.getTextureResource(Resources::TextureResouces::EnvCubeMapNight);
+	m_dayCubeMap = resources.getResource<Texture>(Resources::ResoucesID::EnvCubeMapDay);
+	m_nightCubeMap = resources.getResource<Texture>(Resources::ResoucesID::EnvCubeMapNight);
 
 	if (!m_skyBox)
 	{

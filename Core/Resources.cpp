@@ -21,7 +21,7 @@ Resources::~Resources()
 	m_context->Release();
 }
 
-void Resources::registerTexture(TextureResouces id, Texture* texture)
+void Resources::registerTexture(ResoucesID id, Texture* texture)
 {
 	auto foundIt = m_textureResources.find(id);
 	if (foundIt == m_textureResources.end())
@@ -30,23 +30,13 @@ void Resources::registerTexture(TextureResouces id, Texture* texture)
 	}
 }
 
-void Resources::unregisterTexture(TextureResouces id)
+void Resources::unregisterTexture(ResoucesID id)
 {
 	auto foundIt = m_textureResources.find(id);
 	if (foundIt != m_textureResources.end())
 	{
 		m_textureResources.erase(foundIt);
 	}
-}
-
-Texture* Resources::getTextureResource(TextureResouces id)
-{
-	auto foundIt = m_textureResources.find(id);
-	if (foundIt != m_textureResources.end())
-	{
-		return foundIt->second;
-	}
-	return nullptr;
 }
 
 Texture Resources::loadTexture(const std::string& fileName, bool createSampler)

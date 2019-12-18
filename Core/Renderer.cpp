@@ -6,10 +6,14 @@
 #include "Resources.hpp"
 
 #include "Passes/GenerateGBuffer/GenerateGbuffer.hpp"
-#include "Passes/LitGBuffer/LitGBuffer.hpp"
+#include "Passes/LitGBuffer/LitGBufferCS.hpp"
+#include "Passes/LitGBuffer/LitGBufferPS.hpp"
 #include "Passes/GenerateShadowMaps/GenerateShadowMaps.hpp"
 #include "Passes/SkyBox/SkyBox.hpp"
 #include "Passes/Tonemap/Tonemap.hpp"
+
+#include "SettingsHolder.hpp"
+#include "Settings/RenderSettings.hpp"
 
 Renderer::Renderer(Window& window, Resources& resources)
 	: m_window(window)
@@ -120,31 +124,43 @@ void Renderer::initialize()
 		m_resources.registerTexture(Resources::TextureResouces::EnvCubeMapNight, &m_cubeMapNight);
 	}
 
-	addMainPass(new GenerateGBuffer{});
-	addMainPass(new GenerateShadowMaps{});
-	addMainPass(new LitGBuffer{});
-	addMainPass(new Tonemap{});
-	// PostProcesses
-	addPostPass(new SkyBox{});
+	m_geometryPass.reset(new GenerateGBuffer{});
+	m_shadowMapPass.reset(new GenerateShadowMaps{});
+	m_litGbufferCS.reset(new LitGBufferCS{});
+	m_litGbufferPS.reset(new LitGBufferPS{});
+	m_tonemapPass.reset(new Tonemap{});
+	m_skyBoxPass.reset(new SkyBox{});
+
+	m_framePasses.reserve(6);
+
+	SettingsHolder::getInstance().addSetting(Settings::Type::Render, new RenderSettings{});
 }
 
 void Renderer::deinitialize()
 {
-	for (auto pass : m_mainPasses)
-	{
-		delete pass;
-	}
-
-	for (auto post : m_postProcesses)
-	{
-		delete post;
-	}
-
+	m_framePasses.clear();
     m_depthPrepassCB->Release();
-	m_mainPasses.clear();
-	m_postProcesses.clear();
 	m_backBufferRT->Release();
 	m_swapChain->Release();
+}
+
+void Renderer::constructPasses()
+{
+	m_framePasses.push_back(m_geometryPass.get());
+	m_framePasses.push_back(m_shadowMapPass.get());
+
+	auto settings = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
+	if (settings->useCSforLighting)
+	{
+		m_framePasses.push_back(m_litGbufferCS.get());
+	}
+	else
+	{
+		m_framePasses.push_back(m_litGbufferPS.get());
+	}
+
+	m_framePasses.push_back(m_tonemapPass.get());
+	m_framePasses.push_back(m_skyBoxPass.get());
 }
 
 void Renderer::beginFrame()
@@ -155,21 +171,17 @@ void Renderer::beginFrame()
 
 	m_context->OMSetRenderTargets(1, &m_backBufferRT, m_gbuffer.m_depthStencilView);
 	m_context->RSSetViewports(1, &m_viewport);
+
+	constructPasses();
 }
 
 void Renderer::drawFrame(float dt)
 {
-	for (auto pass : m_mainPasses)
+	for (auto pass : m_framePasses)
 	{
 		pass->setup(*this, m_resources);
 		pass->draw(*this);
 		pass->release(*this, m_resources);
-	}
-	for (auto post : m_postProcesses)
-	{
-		post->setup(*this, m_resources);
-		post->draw(*this);
-		post->release(*this, m_resources);
 	}
 
 	m_swapChain->Present(1, 0);
@@ -178,6 +190,7 @@ void Renderer::drawFrame(float dt)
 
 void Renderer::endFrame()
 {
+	m_framePasses.clear();
 	m_framesRendered++;
 }
 
@@ -245,14 +258,4 @@ void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y
 	m_context->IASetInputLayout(nullptr);
 	
 	m_context->OMSetRenderTargets(1, rtvs, nullptr);
-}
-
-void Renderer::addMainPass(Pass* p)
-{
-	m_mainPasses.push_back(p);
-}
-
-void Renderer::addPostPass(Pass* p)
-{
-	m_postProcesses.push_back(p);
 }

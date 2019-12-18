@@ -52,8 +52,6 @@ Texture* Resources::getTextureResource(TextureResouces id)
 Texture Resources::loadTexture(const std::string& fileName, bool createSampler)
 {
 	Texture res;
-	ID3D11Texture2D* texture;
-	ID3D11ShaderResourceView* shaderResView;
 	D3DX11CreateShaderResourceViewFromFile(m_device, fileName.c_str(), 0, 0, res.m_SRV.GetAddressOf(), nullptr);
 
 	if (createSampler)
@@ -158,15 +156,6 @@ Texture Resources::createDepthStencilTexture(int w, int h)
 
 Shader Resources::createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout)
 {
-	std::ifstream t(fileName);
-	std::string str((std::istreambuf_iterator<char>(t)),
-		std::istreambuf_iterator<char>());
-
-	if (str.empty())
-	{
-		return {};
-	}
-
 	ID3D11VertexShader* vertexShader = nullptr;
 	ID3D11PixelShader* pixelShader = nullptr;
 	ID3D11InputLayout* inputLayout = nullptr;
@@ -176,7 +165,7 @@ Shader Resources::createShader(const std::string& fileName, const std::string& v
 
 	if (!vsName.empty())
 	{
-		D3DCompile(str.c_str(), str.length(), nullptr, nullptr, nullptr, vsName.c_str(), "vs_5_0", 0, 0, &blob, &blobErr);
+		D3DX11CompileFromFile(fileName.c_str(), NULL, NULL, vsName.c_str(), "vs_5_0", 0, 0, NULL, &blob, &blobErr, NULL);
 		if (blobErr)
 		{
 			std::string err = (char*)blobErr->GetBufferPointer();
@@ -201,7 +190,7 @@ Shader Resources::createShader(const std::string& fileName, const std::string& v
 
 	if (!psName.empty())
 	{
-		D3DCompile(str.c_str(), str.length(), nullptr, nullptr, nullptr, psName.c_str(), "ps_5_0", 0, 0, &blob, &blobErr);
+		D3DX11CompileFromFile(fileName.c_str(), NULL, NULL, psName.c_str(), "ps_5_0", 0, 0, NULL, &blob, &blobErr, NULL);
 		if (blobErr)
 		{
 			std::string err = (char*)blobErr->GetBufferPointer();
@@ -214,8 +203,6 @@ Shader Resources::createShader(const std::string& fileName, const std::string& v
 		blob->Release();
 		blob = nullptr;
 	}
-
-	t.close();
 
 	Shader ret(inputLayout, vertexShader, pixelShader);
 	if (inputLayout) inputLayout->Release();

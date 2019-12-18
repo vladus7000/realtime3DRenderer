@@ -3,6 +3,9 @@
 #include "Core/World.hpp"
 #include "Core/Renderer.hpp"
 #include "Core/Resources.hpp"
+#include "Core/SettingsHolder.hpp"
+#include "Core/Settings/RenderSettings.hpp"
+
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -45,6 +48,14 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 	case WM_MOUSELEAVE:
 		mouseButtonPressed = false;
 		ShowCursor(true);
+		break;
+	case WM_KEYDOWN:
+		if (wParam == 'P')
+		{
+			auto set = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
+			set->useCSforLighting = !set->useCSforLighting;
+			return 0L;
+		}
 		break;
 	case WM_MOUSEMOVE:
 		if (mouseButtonPressed)

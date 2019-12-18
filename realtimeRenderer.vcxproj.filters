@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Core\Passes\Tonemap">
       <UniqueIdentifier>{157ab17d-3781-4233-a5d5-0704780fd4c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Settings">
+      <UniqueIdentifier>{44578ddc-dd29-48b6-b989-432ce42f1787}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -63,9 +66,6 @@
     <ClCompile Include="Core\Passes\GenerateGBuffer\GenerateGbuffer.cpp">
       <Filter>Source Files\Core\Passes\GenerateGBuffer</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Passes\LitGBuffer\LitGBuffer.cpp">
-      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Passes\GenerateShadowMaps\GenerateShadowMaps.cpp">
       <Filter>Source Files\Core\Passes\GenerateShadowMaps</Filter>
     </ClCompile>
@@ -77,6 +77,12 @@
     </ClCompile>
     <ClCompile Include="Core\Passes\Tonemap\Tonemap.cpp">
       <Filter>Source Files\Core\Passes\Tonemap</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\LitGBuffer\LitGBufferPS.cpp">
+      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Passes\LitGBuffer\LitGBufferCS.cpp">
+      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -113,9 +119,6 @@
     <ClInclude Include="Core\Passes\GenerateGBuffer\GenerateGbuffer.hpp">
       <Filter>Source Files\Core\Passes\GenerateGBuffer</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Passes\LitGBuffer\LitGBuffer.hpp">
-      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -145,6 +148,21 @@
     </ClInclude>
     <ClInclude Include="Core\Passes\Tonemap\Tonemap.hpp">
       <Filter>Source Files\Core\Passes\Tonemap</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Settings.hpp">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\SettingsHolder.hpp">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Settings\RenderSettings.hpp">
+      <Filter>Source Files\Core\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\LitGBuffer\LitGBufferPS.hpp">
+      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Passes\LitGBuffer\LitGBufferCS.hpp">
+      <Filter>Source Files\Core\Passes\LitGBuffer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

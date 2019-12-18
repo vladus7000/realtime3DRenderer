@@ -6,6 +6,7 @@
 #include "GBuffer.hpp"
 #include "Texture.hpp"
 #include <map>
+#include <memory>
 
 class Pass;
 class Window;
@@ -23,9 +24,6 @@ public:
 	Renderer(Renderer&& rhs) = delete;
 	Renderer& operator=(const Renderer& rhs) = delete;
 	Renderer& operator=(Renderer&& rhs) = delete;
-
-	void addMainPass(Pass* p);
-	void addPostPass(Pass* p);
 
 	void beginFrame();
 	void drawFrame(float dt);
@@ -53,6 +51,7 @@ public:
 private:
 	void initialize();
 	void deinitialize();
+	void constructPasses();
 
 private:
 	Window& m_window;
@@ -74,7 +73,13 @@ private:
 	Texture m_cubeMapNight;
 	D3D11_VIEWPORT m_viewport;
 
-	std::vector<Pass*> m_mainPasses;
-	std::vector<Pass*> m_postProcesses;
+	std::unique_ptr<Pass> m_geometryPass;
+	std::unique_ptr<Pass> m_shadowMapPass;
+	std::unique_ptr<Pass> m_litGbufferCS;
+	std::unique_ptr<Pass> m_litGbufferPS;
+	std::unique_ptr<Pass> m_tonemapPass;
+	std::unique_ptr<Pass> m_skyBoxPass;
+
+	std::vector<Pass*> m_framePasses;
 	int m_framesRendered = 0;
 };

@@ -5,6 +5,7 @@
 #include "Core/Resources.hpp"
 #include "Core/SettingsHolder.hpp"
 #include "Core/Settings/RenderSettings.hpp"
+#include "Core/Settings/WorldSettings.hpp"
 
 #include <algorithm>
 #include <random>
@@ -51,6 +52,12 @@ LRESULT UserFunc(HWND hwnd, UINT msg,
 		break;
 	case WM_KEYDOWN:
 		if (wParam == 'P')
+		{
+			auto set = SettingsHolder::getInstance().getSetting<WorldSettings>(Settings::Type::World);
+			set->pause = !set->pause;
+			return 0L;
+		}
+		if (wParam == 'C')
 		{
 			auto set = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
 			set->useCSforLighting = !set->useCSforLighting;

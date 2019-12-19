@@ -7,8 +7,6 @@
 
 LuminanceAvg::~LuminanceAvg()
 {
-	m_sampler->Release();
-	m_depthState->Release();
 }
 
 void LuminanceAvg::setup(Renderer& renderer, Resources& resources)
@@ -16,43 +14,8 @@ void LuminanceAvg::setup(Renderer& renderer, Resources& resources)
 	if (!m_mainShader.getPixelShader())
 	{
 		m_mainShader = resources.createShader("shaders/tonemap/tonemap.hlsl", "vsmain", "psmain");
-
-		D3D11_SAMPLER_DESC sampler;
-		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
-		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		resources.getDevice()->CreateSamplerState(&sampler, &m_sampler);
-
-		D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-		// Depth test parameters
-		dsDesc.DepthEnable = true;
-		dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-		dsDesc.DepthFunc = D3D11_COMPARISON_NOT_EQUAL;
-
-		// Stencil test parameters
-		dsDesc.StencilEnable = false;
-		dsDesc.StencilReadMask = 0xFF;
-		dsDesc.StencilWriteMask = 0xFF;
-
-		// Stencil operations if pixel is front-facing
-		dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-		dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-		dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-		// Stencil operations if pixel is back-facing
-		dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-		dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-		dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-		// Create depth stencil state
-
-		resources.getDevice()->CreateDepthStencilState(&dsDesc, &m_depthState);
+		m_sampler = resources.getResource<ID3D11SamplerState>(Resources::ResoucesID::LinearSampler);
+		m_depthState = resources.getResource<ID3D11DepthStencilState>(Resources::ResoucesID::NotEqualDepthState);
 	}
 }
 

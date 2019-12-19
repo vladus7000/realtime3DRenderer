@@ -148,6 +148,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="Core\Camera.hpp" />
+    <ClInclude Include="Core\ConstantBuffer.hpp" />
     <ClInclude Include="Core\GBuffer.hpp" />
     <ClInclude Include="Core\Light.hpp" />
     <ClInclude Include="Core\Pass.hpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Core\Settings.hpp" />
     <ClInclude Include="Core\SettingsHolder.hpp" />
     <ClInclude Include="Core\Settings\RenderSettings.hpp" />
+    <ClInclude Include="Core\Settings\WorldSettings.hpp" />
     <ClInclude Include="Core\Shader.hpp" />
     <ClInclude Include="Core\Texture.hpp" />
     <ClInclude Include="Core\tiny_obj_loader.h" />

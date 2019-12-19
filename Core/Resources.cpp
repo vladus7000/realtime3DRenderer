@@ -13,24 +13,26 @@ Resources::Resources()
 	D3D_FEATURE_LEVEL outLevel;
 	unsigned int flags = D3D11_CREATE_DEVICE_DEBUG;
 	D3D11CreateDevice(m_adapter, D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, level, 1, D3D11_SDK_VERSION, &m_device, &outLevel, &m_context);
+	createDefaultResources();
 }
 
 Resources::~Resources()
 {
+	destroyDefaultResources();
 	m_device->Release();
 	m_context->Release();
 }
 
-void Resources::registerTexture(ResoucesID id, Texture* texture)
+void Resources::registerResource(ResoucesID id, void* resource)
 {
 	auto foundIt = m_textureResources.find(id);
 	if (foundIt == m_textureResources.end())
 	{
-		m_textureResources[id] = texture;
+		m_textureResources[id] = resource;
 	}
 }
 
-void Resources::unregisterTexture(ResoucesID id)
+void Resources::unregisterResource(ResoucesID id)
 {
 	auto foundIt = m_textureResources.find(id);
 	if (foundIt != m_textureResources.end())
@@ -142,6 +144,99 @@ Texture Resources::createDepthStencilTexture(int w, int h)
 	}
 
 	return ret;
+}
+
+void Resources::createDefaultResources()
+{
+	D3D11_SAMPLER_DESC sampler;
+	ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
+	sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	m_device->CreateSamplerState(&sampler, &m_linearSampler);
+	registerResource(ResoucesID::LinearSampler, m_linearSampler);
+
+	{
+		D3D11_DEPTH_STENCIL_DESC dsDesc;
+		// Depth test parameters
+		dsDesc.DepthEnable = true;
+		dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		dsDesc.DepthFunc = D3D11_COMPARISON_EQUAL;
+
+		// Stencil test parameters
+		dsDesc.StencilEnable = false;
+		dsDesc.StencilReadMask = 0xFF;
+		dsDesc.StencilWriteMask = 0xFF;
+
+		// Stencil operations if pixel is front-facing
+		dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		// Stencil operations if pixel is back-facing
+		dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		m_device->CreateDepthStencilState(&dsDesc, &m_equalDepthState);
+		registerResource(ResoucesID::EqualDepthState, m_equalDepthState);
+	}
+	{
+		D3D11_DEPTH_STENCIL_DESC dsDesc;
+		// Depth test parameters
+		dsDesc.DepthEnable = true;
+		dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		dsDesc.DepthFunc = D3D11_COMPARISON_NOT_EQUAL;
+
+		// Stencil test parameters
+		dsDesc.StencilEnable = false;
+		dsDesc.StencilReadMask = 0xFF;
+		dsDesc.StencilWriteMask = 0xFF;
+
+		// Stencil operations if pixel is front-facing
+		dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		// Stencil operations if pixel is back-facing
+		dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+		m_device->CreateDepthStencilState(&dsDesc, &m_notEqualDepthState);
+		registerResource(ResoucesID::NotEqualDepthState, m_notEqualDepthState);
+	}
+	{
+		D3D11_BLEND_DESC blend;
+		ZeroMemory(&blend, sizeof(D3D11_BLEND_DESC));
+		blend.AlphaToCoverageEnable = false;
+		blend.IndependentBlendEnable = false;
+		blend.RenderTarget[0].BlendEnable = true;
+		blend.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		blend.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blend.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blend.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+		blend.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+
+		blend.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blend.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+		m_device->CreateBlendState(&blend, &m_defaultAdditiveBlendState);
+		registerResource(ResoucesID::DefaultAdditiveBlend, m_defaultAdditiveBlendState);
+	}
+}
+
+void Resources::destroyDefaultResources()
+{
+	m_linearSampler->Release();
+	m_equalDepthState->Release();
+	m_notEqualDepthState->Release();
+	m_defaultAdditiveBlendState->Release();
 }
 
 Shader Resources::createShader(const std::string& fileName, const std::string& vsName, const std::string& psName, std::vector<D3D11_INPUT_ELEMENT_DESC> layout)

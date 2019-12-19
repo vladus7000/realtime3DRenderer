@@ -9,8 +9,12 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#include "SettingsHolder.hpp"
+#include "Settings/WorldSettings.hpp"
+
 World::World()
 {
+	SettingsHolder::getInstance().addSetting(Settings::Type::World, new WorldSettings{});
 }
 
 World::~World()
@@ -332,6 +336,12 @@ void World::addLight(Light l)
 
 void World::updateSun(float dt)
 {
+	auto settings = SettingsHolder::getInstance().getSetting<WorldSettings>(Settings::Type::World);
+	if (settings->pause)
+	{
+		return;
+	}
+
 	const float rotSpeed = 360.0f / 60.0 * dt;
 
 	m_sunAngle += rotSpeed;

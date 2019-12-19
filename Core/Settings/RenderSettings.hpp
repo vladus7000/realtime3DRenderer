@@ -6,5 +6,5 @@ class RenderSettings : public Settings
 public:
 	RenderSettings() {}
 
-	bool useCSforLighting = true;
+	bool useCSforLighting = false;
 };

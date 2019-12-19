@@ -20,9 +20,8 @@ private:
 private:
 	ID3D11Buffer* m_constantBuffer = nullptr;
 	ID3D11Buffer* m_skyBox = nullptr;
-	ID3D11SamplerState* m_sampler = nullptr;
-	Shader m_mainShader;
 	ID3D11DepthStencilState* m_depthState;
+	Shader m_mainShader;
 	Texture* m_nightCubeMap;
 	Texture* m_dayCubeMap;
 };

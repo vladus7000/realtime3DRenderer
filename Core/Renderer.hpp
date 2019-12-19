@@ -5,6 +5,7 @@
 #include <vector>
 #include "GBuffer.hpp"
 #include "Texture.hpp"
+#include "ConstantBuffer.hpp"
 #include <map>
 #include <memory>
 
@@ -47,6 +48,12 @@ public:
 
 	GBuffer& getGBuffer() { return m_gbuffer; }
 	Texture& getHDRTexture() { return m_hdrTexture; }
+
+	template<typename T>
+	T* lockConstantBuffer(ConstantBuffer<T>& cb, unsigned int subResource = 0);
+
+	template<typename T>
+	void unlockConstantBuffer(ConstantBuffer<T>& cb, unsigned int subResource = 0);
 
 private:
 	void initialize();
@@ -94,3 +101,18 @@ private:
 	std::vector<Pass*> m_framePasses;
 	int m_framesRendered = 0;
 };
+
+template<typename T>
+T* Renderer::lockConstantBuffer(ConstantBuffer<T>& cb, unsigned int subResource)
+{
+	D3D11_MAPPED_SUBRESOURCE res;
+	m_context->Map(cb.buffer.Get(), subResource, D3D11_MAP_WRITE_DISCARD, 0, &res);
+
+	return static_cast<T*>(res.pData);
+}
+
+template<typename T>
+void Renderer::unlockConstantBuffer(ConstantBuffer<T>& cb, unsigned int subResource)
+{
+	m_context->Unmap(cb.buffer.Get(), subResource);
+}

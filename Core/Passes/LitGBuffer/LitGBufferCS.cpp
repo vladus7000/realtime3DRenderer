@@ -13,13 +13,11 @@ LitGBufferCS::~LitGBufferCS()
 	{
 		m_lightsCB->Release();
 	}
-
-	m_sampler->Release();
 }
 
 void LitGBufferCS::setup(Renderer& renderer, Resources& resources)
 {
-	m_shadowMap = resources.getResource<Texture>(Resources::ResoucesID::ShadowMap);
+	m_shadowMap = resources.getResource<Texture>(Resources::ResoucesID::ShadowMapC1);
 	m_cubeMap = resources.getResource<Texture>(Resources::ResoucesID::EnvironmentHDR);
 
 	if (!m_lightsCB)
@@ -33,15 +31,7 @@ void LitGBufferCS::setup(Renderer& renderer, Resources& resources)
 		buffDesc.MiscFlags = 0;
 		device->CreateBuffer(&buffDesc, nullptr, &m_lightsCB);
 
-		D3D11_SAMPLER_DESC sampler;
-		ZeroMemory(&sampler, sizeof(D3D11_SAMPLER_DESC));
-		sampler.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sampler.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sampler.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		device->CreateSamplerState(&sampler, &m_sampler);
-
+		m_sampler = resources.getResource<ID3D11SamplerState>(Resources::ResoucesID::LinearSampler);
 		m_csShader = resources.createComputeShader("shaders/litGBuffer/litGbuffer_c.hlsl", "csMain");
 	}
 }

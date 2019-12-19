@@ -218,5 +218,11 @@
     <ClInclude Include="Core\Passes\SSAO\SSAO.hpp">
       <Filter>Source Files\Core\Passes\SSAO</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Settings\WorldSettings.hpp">
+      <Filter>Source Files\Core\Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ConstantBuffer.hpp">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

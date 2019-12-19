@@ -120,14 +120,14 @@ void Renderer::initialize()
 
 	{// env texture
 		m_envHDR = m_resources.loadTexture("stpeters_cross.dds");
-		m_resources.registerTexture(Resources::ResoucesID::EnvironmentHDR, &m_envHDR);
+		m_resources.registerResource(Resources::ResoucesID::EnvironmentHDR, &m_envHDR);
 	}
 
 	{
 		m_cubeMapDay = m_resources.loadTexture("stpeters_cross.dds");//desert
-		m_resources.registerTexture(Resources::ResoucesID::EnvCubeMapDay, &m_cubeMapDay);
+		m_resources.registerResource(Resources::ResoucesID::EnvCubeMapDay, &m_cubeMapDay);
 		m_cubeMapNight = m_resources.loadTexture("stpeters_cross.dds");//moondust
-		m_resources.registerTexture(Resources::ResoucesID::EnvCubeMapNight, &m_cubeMapNight);
+		m_resources.registerResource(Resources::ResoucesID::EnvCubeMapNight, &m_cubeMapNight);
 	}
 
 	m_mainGBuffer.reset(new GenerateGBuffer{});

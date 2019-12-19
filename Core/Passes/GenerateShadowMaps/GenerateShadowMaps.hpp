@@ -18,5 +18,7 @@ private:
 	virtual void execute(Renderer& renderer) override;
 
 private:
-	Texture m_depthTexture;
+	Texture m_depthTextureC1;
+	Texture m_depthTextureC2;
+	Texture m_depthTextureC3;
 };

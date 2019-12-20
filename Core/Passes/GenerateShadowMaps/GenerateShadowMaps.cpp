@@ -56,7 +56,8 @@ void GenerateShadowMaps::execute(Renderer& renderer)
 			
 			for (int i = 0; i < settings->cascadesCount; i++)
 			{
-				settings->cascadesEndClip[i] = (mainCam.getProjection() * glm::vec4(0.0f, 0.0f, settings->cascadesEnd[i+1], 1.0f)).z;
+				glm::vec4 t = mainCam.getProjection() * glm::vec4(0.0f, 0.0f, settings->cascadesEnd[i + 1], 1.0f);
+				settings->cascadesEndClip[i] = t.z;
 			}
 
 			for (int i = 0; i < settings->cascadesCount; i++) {

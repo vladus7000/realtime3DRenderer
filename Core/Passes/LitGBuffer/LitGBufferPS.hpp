@@ -29,7 +29,8 @@ private:
 		float viewMatrix[16];
 		float projMatrix[16];
 		float viewPosition[4];
-		float numLights[4];
+		float cascadeEndClip[4];
+		float numLights_csCount[4];
 	};
 	ConstantBuffer<LightCB> m_lightsCB;
 	ID3D11SamplerState* m_sampler = nullptr;

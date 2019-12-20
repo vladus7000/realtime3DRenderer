@@ -3,11 +3,11 @@
 #include "World.hpp"
 #include "GBuffer.hpp"
 #include "Resources.hpp"
+#include "SettingsHolder.hpp"
+#include "Settings/RenderSettings.hpp"
 
 #include <limits>
 #include <algorithm>
-
-glm::mat4 proj[3];
 
 GenerateShadowMaps::~GenerateShadowMaps()
 {
@@ -18,13 +18,13 @@ void GenerateShadowMaps::setup(Renderer& renderer, Resources& resources)
 	const int depthSize = 1024;
 	if (!m_depthTextureC1.m_DSV)
 	{
-		m_depthTextureC1 = resources.createDepthStencilTexture(4096, 4096);
+		m_depthTextureC1 = resources.createDepthStencilTexture(1024, 1024);
 		resources.registerResource(Resources::ResoucesID::ShadowMapC1, &m_depthTextureC1);
 
 		m_depthTextureC2 = resources.createDepthStencilTexture(1024, 1024);
 		resources.registerResource(Resources::ResoucesID::ShadowMapC2, &m_depthTextureC2);
 
-		m_depthTextureC3 = resources.createDepthStencilTexture(512, 512);
+		m_depthTextureC3 = resources.createDepthStencilTexture(1024, 1024);
 		resources.registerResource(Resources::ResoucesID::ShadowMapC3, &m_depthTextureC3);
 	}
 }
@@ -40,7 +40,7 @@ void GenerateShadowMaps::execute(Renderer& renderer)
 
 	auto& lights = renderer.getWorld().getLights();
 
-	float cascadeEnd[] = {0.1f, 50.0f, 200.0f, 1000.0f };
+	auto settings = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
 
 	for (auto& l : lights)
 	{
@@ -50,32 +50,36 @@ void GenerateShadowMaps::execute(Renderer& renderer)
 			auto mainCamInv = glm::inverse(mainCam.getView());
 			auto lightCamera = l.m_camera.getView();
 
-			float ar = 800.0f / 600.0f;
-			float tanHalfHFOV = tanf(glm::radians(60.0f / 2.0f));
-			float tanHalfVFOV = tanf(glm::radians((60.0f* ar) / 2.0f));
+			const float ar = mainCam.getAR();
+			const float tanHalfHFOV = tanf(glm::radians(mainCam.getFov() / 2.0f));
+			const float tanHalfVFOV = tanf(glm::radians((mainCam.getFov() * ar) / 2.0f));
 			
-			for (int i = 0; i < 3; i++) {
-				float xn = cascadeEnd[i] * tanHalfHFOV;
-				float xf = cascadeEnd[i + 1] * tanHalfHFOV;
-				float yn = cascadeEnd[i] * tanHalfVFOV;
-				float yf = cascadeEnd[i + 1] * tanHalfVFOV;
+			for (int i = 0; i < settings->cascadesCount; i++)
+			{
+				settings->cascadesEndClip[i] = (mainCam.getProjection() * glm::vec4(0.0f, 0.0f, settings->cascadesEnd[i+1], 1.0f)).z;
+			}
+
+			for (int i = 0; i < settings->cascadesCount; i++) {
+				float xn = settings->cascadesEnd[i] * tanHalfHFOV;
+				float xf = settings->cascadesEnd[i + 1] * tanHalfHFOV;
+				float yn = settings->cascadesEnd[i] * tanHalfVFOV;
+				float yf = settings->cascadesEnd[i + 1] * tanHalfVFOV;
 
 				glm::vec4 frustumCorners[] = {
 					// near face
-					glm::vec4(xn, yn, cascadeEnd[i], 1.0),
-					glm::vec4(-xn, yn, cascadeEnd[i], 1.0),
-					glm::vec4(xn, -yn, cascadeEnd[i], 1.0),
-					glm::vec4(-xn, -yn, cascadeEnd[i], 1.0),
+					glm::vec4(xn, yn, settings->cascadesEnd[i], 1.0),
+					glm::vec4(-xn, yn, settings->cascadesEnd[i], 1.0),
+					glm::vec4(xn, -yn, settings->cascadesEnd[i], 1.0),
+					glm::vec4(-xn, -yn, settings->cascadesEnd[i], 1.0),
 
 					// far face
-					glm::vec4(xf, yf, cascadeEnd[i + 1], 1.0),
-					glm::vec4(-xf, yf, cascadeEnd[i + 1], 1.0),
-					glm::vec4(xf, -yf, cascadeEnd[i + 1], 1.0),
-					glm::vec4(-xf, -yf, cascadeEnd[i + 1], 1.0)
+					glm::vec4(xf, yf, settings->cascadesEnd[i + 1], 1.0),
+					glm::vec4(-xf, yf, settings->cascadesEnd[i + 1], 1.0),
+					glm::vec4(xf, -yf, settings->cascadesEnd[i + 1], 1.0),
+					glm::vec4(-xf, -yf, settings->cascadesEnd[i + 1], 1.0)
 				};
 
 				glm::vec4 frustumCornersL[8];
-
 
 				float minX = std::numeric_limits<float>::max();
 				float maxX = std::numeric_limits<float>::min();
@@ -99,19 +103,20 @@ void GenerateShadowMaps::execute(Renderer& renderer)
 					minZ = std::min(minZ, frustumCornersL[j].z);
 					maxZ = std::max(maxZ, frustumCornersL[j].z);
 
-					proj[i] = glm::orthoLH_ZO(minX-50, maxX+50, minY-50, maxY+50, minZ-50, maxZ+50);
+					settings->cascadesProjectionMatrix[i] = glm::orthoLH_ZO(minX-10.0f, maxX + 10.0f, minY - 10.0f, maxY + 10.0f, minZ-300.0f, maxZ + 10.0f);
 				}
 
 			}
+
 			Camera cam;
 			cam.getView() = lightCamera;
-			cam.getProjection() = proj[0];
+			cam.getProjection() = settings->cascadesProjectionMatrix[0];
 			renderer.depthPrepass(cam, m_depthTextureC1, 0.0f, 0.0f, m_depthTextureC1.m_w, m_depthTextureC1.m_h);
 
-			cam.getProjection() = proj[1];
+			cam.getProjection() = settings->cascadesProjectionMatrix[1];
 			renderer.depthPrepass(cam, m_depthTextureC2, 0.0f, 0.0f, m_depthTextureC2.m_w, m_depthTextureC2.m_h);
 
-			cam.getProjection() = proj[2];
+			cam.getProjection() = settings->cascadesProjectionMatrix[2];
 			renderer.depthPrepass(cam, m_depthTextureC3, 0.0f, 0.0f, m_depthTextureC3.m_w, m_depthTextureC3.m_h);
 			break; // 1 dir light supported
 		}

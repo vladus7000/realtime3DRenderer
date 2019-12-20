@@ -7,15 +7,16 @@ cbuffer lights
 	float4x4 viewMatrix;
 	float4x4 projMatrix;
 	float4 viewPosition;
-	float4 numLight;
+	float cascadeEndClip[4];
+	float4 numLight_cascadeCount;
 }
 
 Texture2D diffuseMap : register(t0);
 Texture2D normalMap : register(t1);
 Texture2D positionMap : register(t2);
-Texture2D shadowMapC1 : register(t3);
-Texture2D shadowMapC2 : register(t4);
-Texture2D shadowMapC3 : register(t5);
+Texture2D shadowMapC1[3] : register(t3);
+//Texture2D shadowMapC2 : register(t4);
+//Texture2D shadowMapC3 : register(t5);
 TextureCube	environmentCube : register(t6);
 SamplerState samplerState : register(s0);
 
@@ -83,94 +84,146 @@ float3 BRDF(float3 position, float3 normal, float3 Wi, float3 Wo, float3 albedo,
 	return lambert + cookTorrance;
 }
 
+float LinearizeDepth(float depth)
+{
+	float near_plane = 0.1f;
+	float far_plane = 1000.0f;
+	float z = depth * 2.0 - 1.0; // Back to NDC 
+	return (2.0 * near_plane * far_plane) / (far_plane + near_plane - z * (far_plane - near_plane));
+}
+
+int getShadowCascade(float3 position)
+{
+	float clipZ = mul(viewMatrix, float4(position, 1.0f)).z;
+	for (int i = 0; i < max((int)numLight_cascadeCount.y, 3); i++)
+	{
+		if (clipZ <= cascadeEndClip[i])
+		{
+			return i;
+		}
+	}
+	return 0;
+}
+
+float getShadowFromCascade(int cascade, float2 tcoord, float2 texelSize, float bias, float fragmentZ)
+{
+	float shadow = 0.0f;
+
+	for (int x = -1; x <= 1; x++)
+	{
+		for (int y = -1; y <= 1; y++)
+		{
+			float depth = shadowMapC1[cascade].SampleLevel(samplerState, tcoord + float2(x, y)*texelSize, 0).x;
+			shadow += (fragmentZ - bias) < depth ? 1.0f : 0.0f;
+	//		//if (z1 > 1.0) shadow = 0;
+		}
+	}
+	return shadow /= 9.0f;
+}
+
+float getShadowIntencity(float3 position, float bias)
+{
+	int cascade = getShadowCascade(position);
+	float4 clipPoint = mul(sunViewProjection[cascade], float4(position, 1.0f));
+
+	float3 projectedPoint = clipPoint.xyz / clipPoint.w;
+	float z = projectedPoint.z;
+
+	float2 newTCoord = projectedPoint.xy * 0.5f + float2(0.5, 0.5);
+	newTCoord.y = 1.0f - newTCoord.y;
+	
+	return getShadowFromCascade(1, newTCoord, float2(1.0 / 1024.0, 1.0 / 1024.0), bias, z);
+}
+
 float3 L(float3 position, float3 normal, int lightIndex)
 {
-	float cascadeEnd[4] = { 0.1f, 50.0f, 200.0f, 1000.0f };
+	//float cascadeEnd[4] = { 0.1f, 50.0f, 200.0f, 1000.0f };
 	float intencity = 0;
-	float3 colorD = float3(1,1,1);
 	if (lightPosition_type[lightIndex].w == 0) // dir
 	{
-		float4 clipZ = mul(viewMatrix, float4(position, 1.0f));
+		//float4 clipZ = mul(viewMatrix, float4(position, 1.0f));
 
-		float endClip1 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[1], 1.0f)).z;
-		float endClip2 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[2], 1.0f)).z;
-		float endClip3 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[3], 1.0f)).z;
-		bool CS1 = false;
-		bool CS2 = false;
-		bool CS3 = false;
+		//float endClip1 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[1], 1.0f)).z;
+		//float endClip2 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[2], 1.0f)).z;
+		//float endClip3 = mul(projMatrix, float4(0.0, 0.0, cascadeEnd[3], 1.0f)).z;
+		//bool CS1 = false;
+		//bool CS2 = false;
+		//bool CS3 = false;
+		//
+		//if (clipZ.z <= endClip1)
+		//{
+		//	CS1 = true;
+		//}
+		//else if (clipZ.z <= endClip2)
+		//{
+		//	CS2 = true;
+		//}
+		//else
+		//{
+		//	CS3 = true;
+		//}
 
-		if (clipZ.z <= endClip1)
-		{
-			CS1 = true;
-		}
-		else if (clipZ.z <= endClip2)
-		{
-			CS2 = true;
-		}
-		else
-		{
-			CS3 = true;
-		}
+		//float4 projectedPoint1 = mul(sunViewProjection[0], float4(position, 1.0f));
+		//float4 projectedPoint2 = mul(sunViewProjection[1], float4(position, 1.0f));
+		//float4 projectedPoint3 = mul(sunViewProjection[2], float4(position, 1.0f));
 
-		float4 projectedPoint1 = mul(sunViewProjection[0], float4(position, 1.0f));
-		float4 projectedPoint2 = mul(sunViewProjection[1], float4(position, 1.0f));
-		float4 projectedPoint3 = mul(sunViewProjection[2], float4(position, 1.0f));
-
-		float bias = max(0.05 * (1.0 - dot(normalize(normal), normalize(-lightDirection[lightIndex]))), 0.005);
-
-		projectedPoint1.xyz /= projectedPoint1.w;
-		float z1 = projectedPoint1.z;
-		float2 newTCoord1 = projectedPoint1.xy * 0.5f + float2(0.5, 0.5);
-		newTCoord1.y = 1.0f - newTCoord1.y;
-
-		projectedPoint2.xyz /= projectedPoint2.w;
-		float z2 = projectedPoint2.z;
-		float2 newTCoord2 = projectedPoint2.xy * 0.5f + float2(0.5, 0.5);
-		newTCoord2.y = 1.0f - newTCoord2.y;
-
-
-		projectedPoint3.xyz /= projectedPoint3.w;
-		float z3 = projectedPoint3.z;
-		float2 newTCoord3 = projectedPoint3.xy * 0.5f + float2(0.5, 0.5);
-		newTCoord3.y = 1.0f - newTCoord3.y;
+		float bias = max(0.005 * (1.0 - dot(normalize(normal), normalize(-lightDirection[lightIndex]))), 0.0005);
+		intencity = 0.5f;// getShadowIntencity(position, bias);
+		//projectedPoint1.xyz /= projectedPoint1.w;
+		//float z1 = projectedPoint1.z;
+		//float2 newTCoord1 = projectedPoint1.xy * 0.5f + float2(0.5, 0.5);
+		//newTCoord1.y = 1.0f - newTCoord1.y;
+		//
+		//projectedPoint2.xyz /= projectedPoint2.w;
+		//float z2 = projectedPoint2.z;
+		//float2 newTCoord2 = projectedPoint2.xy * 0.5f + float2(0.5, 0.5);
+		//newTCoord2.y = 1.0f - newTCoord2.y;
+		//
+		//
+		//projectedPoint3.xyz /= projectedPoint3.w;
+		//float z3 = projectedPoint3.z;
+		//float2 newTCoord3 = projectedPoint3.xy * 0.5f + float2(0.5, 0.5);
+		//newTCoord3.y = 1.0f - newTCoord3.y;
 
 
 
 		//float zShadowMap = shadowMap.Sample(samplerState, newTCoord).x;
 
-		float shadow = 0.0f;
-		
-		
-		for (int x = -1; x <= 1; x++)
-		{
-			for (int y = -1; y <= 1; y++)
-			{
-				float depth;
-				if (CS1)
-				{
-					float2 texSize = float2(1.0 / 4096.0, 1.0 / 4096.0);
-					//colorD = float3(10.0, 0.0, 0.0);
-					depth = shadowMapC1.SampleLevel(samplerState, newTCoord1 + float2(x, y)*texSize, 0).x;
-					shadow += (z1 - bias) < depth ? 1.0f : 0.0f;
-				}
-				if (CS2)
-				{
-					float2 texSize = float2(1.0 / 1024.0, 1.0 / 1024.0);
-					//colorD = float3(0.0, 10.0, 0.0);
-					depth = shadowMapC2.SampleLevel(samplerState, newTCoord2 + float2(x, y)*texSize, 0).x;
-					shadow += (z2 - bias) < depth ? 1.0f : 0.0f;
-				}
-				if (CS3)
-				{
-					float2 texSize = float2(1.0 / 512.0, 1.0 / 512.0);
-					//colorD = float3(0.0, 0.0, 10.0);
-					depth = shadowMapC3.SampleLevel(samplerState, newTCoord3 + float2(x, y)*texSize, 0).x;
-					shadow += (z3 - bias) < depth ? 1.0f : 0.0f;
-				}
-				
-			}
-		}
-		intencity =  shadow /= 9.0f;
+		//float shadow = 0.0f;
+		//
+		//for (int x = -1; x <= 1; x++)
+		//{
+		//	for (int y = -1; y <= 1; y++)
+		//	{
+		//		float depth;
+		//		if (CS1)
+		//		{
+		//			float2 texSize = float2(1.0 / 1024.0, 1.0 / 1024.0);
+		//			//colorD = float3(10.0, 0.0, 0.0);
+		//			depth = shadowMapC1[0].SampleLevel(samplerState, newTCoord1 + float2(x, y)*texSize, 0).x;
+		//			shadow += (z1 - bias) < depth ? 1.0f : 0.0f;
+		//			if (z1 > 1) shadow = 0;
+		//		}
+		//		if (CS2)
+		//		{
+		//			float2 texSize = float2(1.0 / 1024.0, 1.0 / 1024.0);
+		//			//colorD = float3(0.0, 10.0, 0.0);
+		//			depth = shadowMapC1[1].SampleLevel(samplerState, newTCoord2 + float2(x, y)*texSize, 0).x;
+		//			shadow += (z2 - bias) < depth ? 1.0f : 0.0f;
+		//			if (z2 > 1) shadow = 0;
+		//		}
+		//		if (CS3)
+		//		{
+		//			float2 texSize = float2(1.0 / 512.0, 1.0 / 512.0);
+		//			//colorD = float3(0.0, 0.0, 10.0);
+		//			depth = shadowMapC1[2].SampleLevel(samplerState, newTCoord3 + float2(x, y)*texSize, 0).x;
+		//			shadow += (z3 - bias) < depth ? 1.0f : 0.0f;
+		//			if (z3 > 1) shadow = 0;
+		//		}
+		//		
+		//	}
+		//}
+		//intencity =  shadow /= 9.0f;
 	}
 	else // point
 	{
@@ -183,7 +236,7 @@ float3 L(float3 position, float3 normal, int lightIndex)
 		intencity = att;
 	}
 
-	return intencity * lightIntensity_radius[lightIndex].xyz * colorD;
+	return intencity * lightIntensity_radius[lightIndex].xyz;
 }
 
 float3 litPixel(float2 tCoord)
@@ -197,9 +250,10 @@ float3 litPixel(float2 tCoord)
 	float3 color = float3(0, 0, 0);
 	float3 ambient = environmentCube.SampleLevel(samplerState, normal_m.xyz, 0).xyz;
 
-	for (int lightIndex = 0; lightIndex < (int)numLight.x; lightIndex++)
+	for (int lightIndex = 0; lightIndex < (int)numLight_cascadeCount.x; lightIndex++)
 	{
 		float NdotL = saturate(dot(normal_m.xyz, normalize(lightPosition_type[lightIndex].xyz - position_r.xyz)));
+	return diffuse;
 		color += BRDF(position_r.xyz,
 			normalize(normal_m.xyz),
 			normalize(lightPosition_type[lightIndex].xyz - position_r.xyz), //Wi

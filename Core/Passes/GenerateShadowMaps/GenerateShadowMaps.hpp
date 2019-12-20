@@ -5,7 +5,7 @@
 #include "Texture.hpp"
 
 struct ID3D11Buffer;
-struct ID3D11SamplerState;
+struct ID3D11RasterizerState;
 
 class GenerateShadowMaps : public Pass
 {
@@ -21,4 +21,5 @@ private:
 	Texture m_depthTextureC1;
 	Texture m_depthTextureC2;
 	Texture m_depthTextureC3;
+	ID3D11RasterizerState* m_rasterState = nullptr;
 };

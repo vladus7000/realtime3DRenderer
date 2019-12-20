@@ -4,10 +4,10 @@
 #include "GBuffer.hpp"
 #include "Light.hpp"
 #include "Resources.hpp"
+#include "SettingsHolder.hpp"
+#include "Settings/RenderSettings.hpp"
 
 #include <algorithm>
-
-extern glm::mat4 proj[3];
 
 LitGBufferPS::~LitGBufferPS()
 {
@@ -59,6 +59,7 @@ void LitGBufferPS::execute(Renderer& renderer)
 	auto& world = renderer.getWorld();
 
 	auto& gbuffer = renderer.getGBuffer();
+	auto settings = SettingsHolder::getInstance().getSetting<RenderSettings>(Settings::Type::Render);
 
 	float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	context->ClearRenderTargetView(renderer.getHDRTexture().m_RT.Get(), color);
@@ -133,15 +134,16 @@ void LitGBufferPS::execute(Renderer& renderer)
 
 			if (l.m_type == Light::Type::Directional)
 			{
-				//glm::mat4 mvp = l.m_camera.getProjection() * l.m_camera.getView();
-				glm::mat4 mvp = proj[0] * l.m_camera.getView();
+				glm::mat4 mvp = settings->cascadesProjectionMatrix[0] * l.m_camera.getView();
 				memcpy(&buffer->sunViewProjection[16 * 0], &mvp[0][0], sizeof(float[16]));
 
-				mvp = proj[1] * l.m_camera.getView();
+				mvp = settings->cascadesProjectionMatrix[1] * l.m_camera.getView();
 				memcpy(&buffer->sunViewProjection[16 * 1], &mvp[0][0], sizeof(float[16]));
 
-				mvp = proj[2] * l.m_camera.getView();
+				mvp = settings->cascadesProjectionMatrix[2] * l.m_camera.getView();
 				memcpy(&buffer->sunViewProjection[16 * 2], &mvp[0][0], sizeof(float[16]));
+
+				memcpy(buffer->cascadeEndClip, settings->cascadesEndClip, sizeof(float) * settings->cascadesCount);
 			}
 
 			lightIndex++;
@@ -153,7 +155,8 @@ void LitGBufferPS::execute(Renderer& renderer)
 		memcpy(buffer->projMatrix, &world.getCamera().getProjection()[0][0], sizeof(float[16]));
 
 		lightIndex = std::max(lightIndex, m_lightMaxNumber);
-		buffer->numLights[0] = lightIndex;
+		buffer->numLights_csCount[0] = lightIndex;
+		buffer->numLights_csCount[1] = settings->cascadesCount;
 		renderer.unlockConstantBuffer(m_lightsCB);
 
 		ID3D11Buffer* constants[] = { m_lightsCB.buffer.Get() };

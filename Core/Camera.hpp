@@ -14,11 +14,14 @@ public:
 
 	void setProjection(float fov, float aspect, float zn, float zf)
 	{
+		m_ar = aspect;
+		m_fov = fov;
 		m_projection = glm::perspectiveLH_ZO(glm::radians(fov), aspect, zn, zf);
 	}
 
 	void setOrtho(float left, float right, float bottom, float top, float zn, float zf)
 	{
+		m_ar = (right - left) / (top - bottom); // ?
 		m_projection = glm::orthoLH_ZO(left, right, bottom, top, zn, zf);
 	}
 
@@ -81,10 +84,14 @@ public:
 		m_direction = -glm::normalize(m_direction);
 	}
 
+	float getAR() const { return m_ar; }
+	float getFov() const { return m_fov; }
 
 private:
 	glm::mat4 m_projection;
 	glm::mat4 m_view;
 	glm::vec3 m_position;
 	glm::vec3 m_direction;
+	float m_ar = 1.0f;
+	float m_fov = 0.0f;
 };

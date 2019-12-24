@@ -129,17 +129,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	groundObject->worldMatrix = glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
 	groundObject->name = "ground";
 
+	int zombieCount = 5;
+
 	auto pistol = mainWorld.loadObjects("pistol/pistol.obj", "pistol/", resources);
 
 	auto t = pistol;
 	while (t != mainWorld.getObjects().end())
 	{
+		t->name = "pistol";
 		t->worldMatrix = glm::translate(glm::vec3{ 0.0f, 5.0f, -40.0f }) * glm::scale(glm::vec3{ 15.0f, 15.0f, 15.0f });
 		++t;
 	}
 
 	std::random_device rd;
 	std::mt19937 e2(rd());
+	std::uniform_real_distribution<> zombieR(-400.0f, 400.0f);
 	std::uniform_real_distribution<> distX(minBB.x, maxBB.x);
 	std::uniform_real_distribution<> distY(minBB.y, maxBB.y);
 	std::uniform_real_distribution<> distZ(minBB.z, maxBB.z);
@@ -159,8 +163,25 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		l.m_radius = radiuses(e2);
 		mainWorld.addLight(l);
 	}
+	auto zombie = mainWorld.loadObjects("zombie/0.obj", "zombie/", resources); // 5 shapes each
+	for (int i = 0; i < zombieCount - 1; i++)
+		mainWorld.loadObjects("zombie/0.obj", "zombie/", resources); // 5 shapes each
 
-	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.1f, 1000.f);
+	{
+		auto t_ = zombie;
+		float rx, ry;
+		for (int i = 0; i < zombieCount; i++)
+		{
+			rx = zombieR(e2);
+			ry = zombieR(e2);
+			for (int j = 0; j < 5; j++)
+			{
+				t_->worldMatrix = glm::translate(glm::vec3{ rx, 0.0f, ry }) * glm::scale(glm::vec3{ 6.0f, 6.0f, 6.0f });
+				++t_;
+			}
+		}
+	}
+	g_mainCamera.setProjection(60.0f, (float)mainWindow.getWidth() / (float)mainWindow.getHeight(), 0.01f, 1000.f);
 	g_mainCamera.setView({ 120, 60, 4 }, { 0, 0, 0 });
 
 	const float dt = 1.0f / 60.0f;
@@ -178,13 +199,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 				targetPositions[i] = { distX(e2), distY(e2), distZ(e2) };
 			}
 			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
-		}
-
-		auto t = pistol;
-		while (t != mainWorld.getObjects().end())
-		{
-			t->worldMatrix = glm::translate(glm::vec3{ 0.0f, 5.0f, -40.0f }) *glm::rotate (glm::radians(angle), glm::vec3{ 0.0f, 1.0f, 0.0f }) * glm::scale(glm::vec3{ 15.0f, 15.0f, 15.0f });
-			++t;
 		}
 
 		mainWorld.updateSun(dt);
@@ -212,8 +226,40 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
         {
             g_mainCamera.moveRight(speed);
         }
+		g_mainCamera.getPosition().y = 7.0f;
 		g_mainCamera.updateView();
 		mainWorld.setCamera(g_mainCamera);
+
+		auto t = pistol;
+		for (int i = 0; i < 4; i++)
+		{
+			t->worldMatrix = glm::inverse(g_mainCamera.getView()) *glm::translate(glm::vec3(0.4f, -0.5f, 1.03f))*glm::rotate(glm::radians(90.0f), glm::vec3{ 0.0f, 1.0f, 0.0f })* glm::scale(glm::vec3{ 0.6f, 0.6f, 0.6f });// glm::translate(glm::vec3{ 0.0f, 5.0f, -40.0f }) *glm::rotate(glm::radians(angle), glm::vec3{ 0.0f, 1.0f, 0.0f }) * glm::scale(glm::vec3{ 15.0f, 15.0f, 15.0f });
+			++t;
+		}
+
+		{
+			auto t_ = zombie;
+			float rx, ry;
+			for (int i = 0; i < zombieCount; i++)
+			{
+				rx = zombieR(e2);
+				ry = zombieR(e2);
+				for (int j = 0; j < 5; j++)
+				{
+					glm::vec4 pos=  t_->worldMatrix[3];
+					
+					if (glm::length(glm::vec3(pos.x, pos.y, pos.z) - g_mainCamera.getPosition()) > 0.5f)
+					{
+						glm::vec3 newPos= glm::normalize(g_mainCamera.getPosition() - glm::vec3(pos.x, pos.y, pos.z)) * delta;
+						pos.x += newPos.x;
+						pos.z += newPos.z;
+					}
+
+					t_->worldMatrix[3] = pos;
+					++t_;
+				}
+			}
+		}
 
 		mainRenderer.beginFrame();
 		mainRenderer.drawFrame(dt);

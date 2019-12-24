@@ -15,6 +15,7 @@
 World::World()
 {
 	SettingsHolder::getInstance().addSetting(Settings::Type::World, new WorldSettings{});
+	m_objects.reserve(100000);
 }
 
 World::~World()
@@ -349,6 +350,7 @@ void World::updateSun(float dt)
 	{
 		m_sunAngle = 0.0f;
 	}
+	if (m_sunAngle > 45.0f) settings->pause = true;
 
 	m_sunLight->m_position.x = 500.0f * cos(glm::radians(m_sunAngle));
 	m_sunLight->m_position.y = 500.0f * sin(glm::radians(m_sunAngle));

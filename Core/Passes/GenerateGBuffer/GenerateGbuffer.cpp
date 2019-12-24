@@ -92,6 +92,7 @@ void GenerateGBuffer::execute(Renderer& renderer)
 		auto& camera = renderer.getWorld().getCamera();
 
 		glm::mat4 mvp = camera.getProjection() * camera.getView() * mesh.worldMatrix;
+	
 		//glm::mat4 model = glm::rotate(glm::radians(0.0f), glm::vec3{ 0.f, 1.f, 0.f }) * glm::scale(glm::vec3{ 1.0f, 1.0f, 1.0f });
 		memcpy(buffer->mvp, &mvp[0][0], sizeof(float[16]));
 		memcpy(buffer->model, &(mesh.worldMatrix[0][0]), sizeof(float[16]));

@@ -34,6 +34,7 @@ public:
 
 	void setPosition(const glm::vec3& p) { m_position = p; }
 	const glm::vec3& getPosition() const { return m_position; }
+	glm::vec3& getPosition() { return m_position; }
 
 	void setDirection(const glm::vec3& p) { m_direction = p; }
 	const glm::vec3& getDirection() const { return m_direction; }
@@ -82,16 +83,22 @@ public:
 		m_direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
 		m_direction = -glm::normalize(m_direction);
+		m_pitch = pitch;
+		m_yaw = yaw;
 	}
 
 	float getAR() const { return m_ar; }
 	float getFov() const { return m_fov; }
+	float getPitch() const { return m_pitch; }
+	float getYaw() const { return m_yaw; }
 
 private:
 	glm::mat4 m_projection;
 	glm::mat4 m_view;
 	glm::vec3 m_position;
 	glm::vec3 m_direction;
+	float m_pitch = 0.0f;
+	float m_yaw = 0.0f;
 	float m_ar = 1.0f;
 	float m_fov = 0.0f;
 };

@@ -6,7 +6,7 @@
 #include "Core/SettingsHolder.hpp"
 #include "Core/Settings/RenderSettings.hpp"
 #include "Core/Settings/WorldSettings.hpp"
-
+#include "Core/UI/UI.hpp"
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -23,6 +23,9 @@ int lastY = 0;
 LRESULT UserFunc(HWND hwnd, UINT msg,
 	WPARAM wParam, LPARAM lParam)
 {
+	uiInput(hwnd, msg, wParam, lParam);
+	//	return 0;
+
 	const float dt = 1.0f / 60.0f;
 	const float speed = dt * 50.0f;
 	switch (msg) {
@@ -106,7 +109,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 	mainWorld.initSun(resources);
 
-	auto newObjects = mainWorld.loadObjects("rungholt/house.obj", "rungholt/", resources);
+	auto newObjects = mainWorld.loadObjects("sceneblend.obj", "", resources);
 	while (newObjects != mainWorld.getObjects().end())
 	{
 		//newObjects->worldMatrix = glm::scale(glm::vec3{ 0.1f, 0.1f, 0.1f });
@@ -120,14 +123,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 		maxBB.y = std::max(maxBB.y, newObjects->maxCoord.y);
 		maxBB.z = std::max(maxBB.z, newObjects->maxCoord.z);
 
+		newObjects->worldMatrix = glm::scale(glm::vec3{ 3.0f, 3.0f, 3.0f });
 		++newObjects;
 	}
 	minBB -= 50.0f;
 	maxBB += 50.0f;
 
-	auto groundObject = mainWorld.loadObjects("cube.obj", "", resources);
-	groundObject->worldMatrix = glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
-	groundObject->name = "ground";
+	//auto groundObject = mainWorld.loadObjects("cube.obj", "", resources);
+	//groundObject->worldMatrix = glm::scale(glm::vec3{ 800.0f, 0.1f, 800.0f });
+	//groundObject->name = "ground";
 
 	int zombieCount = 5;
 
@@ -187,6 +191,41 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 	const float dt = 1.0f / 60.0f;
     const float speed = dt * 50.0f;
 	float angle = 0.0f;
+	uiInit(&resources);
+	//struct nk_context ctx;
+	//struct nk_font font;
+	//nk_init_fixed(&ctx, calloc(1, 10 * 1024*1024), 10 * 1024 * 1024, &font);
+	//
+	//enum { EASY, HARD };
+	//static int op = EASY;
+	//static float value = 0.6f;
+	//static int i = 20;
+	//
+	//if (nk_begin(&ctx, "Show", nk_rect(50, 50, 220, 220),
+	//	NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE)) {
+	//	/* fixed widget pixel width */
+	//	nk_layout_row_static(&ctx, 30, 80, 1);
+	//	if (nk_button_label(&ctx, "button")) {
+	//		/* event handling */
+	//	}
+	//
+	//	/* fixed widget window ratio width */
+	//	nk_layout_row_dynamic(&ctx, 30, 2);
+	//	if (nk_option_label(&ctx, "easy", op == EASY)) op = EASY;
+	//	if (nk_option_label(&ctx, "hard", op == HARD)) op = HARD;
+	//
+	//	/* custom widget pixel width */
+	//	nk_layout_row_begin(&ctx, NK_STATIC, 30, 2);
+	//	{
+	//		nk_layout_row_push(&ctx, 50);
+	//		nk_label(&ctx, "Volume:", NK_TEXT_LEFT);
+	//		nk_layout_row_push(&ctx, 110);
+	//		nk_slider_float(&ctx, 0, &value, 1.0f, 0.1f);
+	//	}
+	//	nk_layout_row_end(&ctx);
+	//}
+	//nk_end(&ctx);
+
 	while (!mainWindow.shouldClose())
 	{
 		angle += dt*10.0f;
@@ -200,6 +239,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 			}
 			lights[i+1].m_position += glm::normalize(targetPositions[i] - lights[i+1].m_position) * delta;
 		}
+
 
 		mainWorld.updateSun(dt);
 		mainWindow.peekMessages();
@@ -263,8 +303,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLin
 
 		mainRenderer.beginFrame();
 		mainRenderer.drawFrame(dt);
+		uiDraw();
 		mainRenderer.endFrame();
 	}
-
+	uiDeinit();
 	return 0;
 }

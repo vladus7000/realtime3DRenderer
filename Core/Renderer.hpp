@@ -74,11 +74,16 @@ private:
 	Texture m_hdrTexture;
     Shader m_depthPrepassShader;
     ID3D11Buffer* m_depthPrepassCB = nullptr;
+	ID3D11BlendState* m_defaultBlend = nullptr;
+	ID3D11DepthStencilState* m_defaultDepthState = nullptr;
+	float m_blendFactors[4];
+	UINT m_sampleMask;
 	GBuffer m_gbuffer;
 	Texture m_envHDR;
 	Texture m_cubeMapDay;
 	Texture m_cubeMapNight;
 	D3D11_VIEWPORT m_viewport;
+	D3D11_RECT m_scissor;
 	//TODO:
 	//reflectionCapture, planarReflections, dynamicEnvMap, (mainZPass), (mainGBuffer), mainGBufferSimple, mainGBufferDecals, decalVolumes, mainGBufferFixup,
 	//msaaZDown, msaaClassify, lensFlaresOcclusionQueries, (lightPassBegin), (cascadedShadowMaps), (spotlightShadowMaps), downsampleZ, linearizeZ, (ssao),ssaoFilter, (ssr),

@@ -85,6 +85,11 @@ void Renderer::initialize()
 	m_viewport.TopLeftX = 0.0f;
 	m_viewport.TopLeftY = 0.0f;
 
+	m_scissor.left = 0;
+	m_scissor.top = 0;
+	m_scissor.right = 800;
+	m_scissor.bottom = 600;
+
 	///-----
 	{
 		D3D11_TEXTURE2D_DESC desc;
@@ -116,6 +121,10 @@ void Renderer::initialize()
         buffDesc.MiscFlags = 0;
         m_device->CreateBuffer(&buffDesc, nullptr, &m_depthPrepassCB);
     }
+
+	m_context->OMGetBlendState(&m_defaultBlend, m_blendFactors, &m_sampleMask);
+	UINT ref;
+	m_context->OMGetDepthStencilState(&m_defaultDepthState, &ref);
 	///////////////////////
 
 	{// env texture
@@ -192,6 +201,12 @@ void Renderer::beginFrame()
 
 	m_context->OMSetRenderTargets(1, &m_backBufferRT, m_gbuffer.m_depth.m_DSV.Get());
 	m_context->RSSetViewports(1, &m_viewport);
+	m_context->RSSetScissorRects(1, &m_scissor);
+	m_context->OMSetBlendState(m_defaultBlend, m_blendFactors, m_sampleMask);
+	m_context->OMSetDepthStencilState(m_defaultDepthState, 1.0f);
+
+	ID3D11ShaderResourceView* srvs[] = { nullptr, nullptr,nullptr,nullptr };
+	m_context->PSSetShaderResources(0, 4, srvs);
 
 	constructPasses();
 }
@@ -204,15 +219,15 @@ void Renderer::drawFrame(float dt)
 		pass->execute(*this);
 		pass->release(*this, m_resources);
 	}
-
-	m_swapChain->Present(1, 0);
-
+	m_context->OMSetRenderTargets(1, &m_backBufferRT, m_gbuffer.m_depth.m_DSV.Get());
 }
 
 void Renderer::endFrame()
 {
 	m_framePasses.clear();
 	m_framesRendered++;
+
+	m_swapChain->Present(1, 0);
 }
 
 void Renderer::depthPrepass(const Camera& camera, Texture& tex, float x, float y, float w, float h)

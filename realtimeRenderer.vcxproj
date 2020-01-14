@@ -141,6 +141,7 @@
     <ClCompile Include="Core\Resources.cpp" />
     <ClCompile Include="Core\Shader.cpp" />
     <ClCompile Include="Core\Texture.cpp" />
+    <ClCompile Include="Core\UI\UI.cpp" />
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\World.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -173,6 +174,11 @@
     <ClInclude Include="Core\Shader.hpp" />
     <ClInclude Include="Core\Texture.hpp" />
     <ClInclude Include="Core\tiny_obj_loader.h" />
+    <ClInclude Include="Core\UI\nuklear.h" />
+    <ClInclude Include="Core\UI\nuklear_d3d11.h" />
+    <ClInclude Include="Core\UI\nuklear_d3d11_pixel_shader.h" />
+    <ClInclude Include="Core\UI\nuklear_d3d11_vertex_shader.h" />
+    <ClInclude Include="Core\UI\UI.hpp" />
     <ClInclude Include="Core\Window.hpp" />
     <ClInclude Include="Core\World.hpp" />
     <ClInclude Include="Light.hpp" />

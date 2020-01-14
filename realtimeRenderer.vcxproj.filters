@@ -55,6 +55,9 @@
     <Filter Include="Source Files\Core\Passes\SSR">
       <UniqueIdentifier>{bb0735ea-a2e3-4f09-9017-4e258ae205fc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\UI">
+      <UniqueIdentifier>{9f72e85c-4dfc-4faa-9f5f-659e8b27983f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -119,6 +122,9 @@
     </ClCompile>
     <ClCompile Include="Core\Passes\SSAO\SSAO.cpp">
       <Filter>Source Files\Core\Passes\SSAO</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\UI\UI.cpp">
+      <Filter>Source Files\Core\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -223,6 +229,21 @@
     </ClInclude>
     <ClInclude Include="Core\ConstantBuffer.hpp">
       <Filter>Source Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\UI\nuklear.h">
+      <Filter>Source Files\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\UI\nuklear_d3d11.h">
+      <Filter>Source Files\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\UI\nuklear_d3d11_pixel_shader.h">
+      <Filter>Source Files\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\UI\nuklear_d3d11_vertex_shader.h">
+      <Filter>Source Files\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\UI\UI.hpp">
+      <Filter>Source Files\Core\UI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
